@@ -174,7 +174,6 @@ function drawLine(
         lineColor: "black",
     },
 ) {
-    const precision = 1;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const minX = Math.min(x1, x2);
@@ -188,10 +187,10 @@ function drawLine(
         const m = dy / dx;
         let y = minX === x1 ? y1 : y2;
         let partsCount = 0;
-        for (let x = minX; x <= maxX; x += precision) {
-            y += m * precision;
+        for (let x = minX; x <= maxX; x += 1) {
+            y += m;
             if (lineStyle === "dashed") {
-                if ((partsCount * precision) % 12 === 0) {
+                if (partsCount % 12 === 0) {
                     noPixel = !noPixel;
                 }
                 partsCount += 1;
@@ -204,10 +203,10 @@ function drawLine(
         const m = dx / dy;
         let x = minY === y1 ? x1 : x2;
         let partsCount = 0;
-        for (let y = minY; y <= maxY; y += precision) {
-            x += m * precision;
+        for (let y = minY; y <= maxY; y += 1) {
+            x += m;
             if (lineStyle === "dashed") {
-                if ((partsCount * precision) % 12 === 0) {
+                if (partsCount % 12 === 0) {
                     noPixel = !noPixel;
                 }
                 partsCount += 1;

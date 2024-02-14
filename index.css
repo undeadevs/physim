@@ -1,0 +1,64 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.controls {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+
+    display: grid;
+    gap: 0.5rem;
+
+    background-color: #4b5487;
+    padding: 1rem;
+
+    border-radius: 0.5rem;
+}
+
+.controls > .input-wrapper {
+    display: flex;
+    gap: 1rem;
+}
+
+.controls > .input-wrapper > label {
+    flex: 1;
+    color: white;
+}
+
+.controls > .input-wrapper > .choice-controls-input + .choice-controls-label {
+    cursor: pointer;
+}
+
+.controls
+    > .input-wrapper
+    > .choice-controls-input
+    + .choice-controls-label
+    button {
+    opacity: 0.5;
+    pointer-events: none;
+    width: 100%;
+    padding: 0.5rem;
+    background-color: #5e72ad;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.controls
+    > .input-wrapper
+    > .choice-controls-input:checked
+    + .choice-controls-label
+    button {
+    opacity: 1;
+}
+
+#cv-sim {
+    --input-scaling: 50px;
+    background: linear-gradient(to right, transparent 98%, lightgray 98%),
+        linear-gradient(to bottom, transparent 98%, lightgray 98%);
+    background-size: var(--input-scaling) var(--input-scaling);
+    background-position: 50vw 50vh;
+}

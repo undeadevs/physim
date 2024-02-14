@@ -61,4 +61,6 @@
         linear-gradient(to bottom, transparent 98%, lightgray 98%);
     background-size: var(--input-scaling) var(--input-scaling);
     background-position: 50vw 50vh;
+
+    touch-action: none;
 }

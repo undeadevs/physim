@@ -82,16 +82,6 @@ let isHolding = { obj: false, focal: false };
 cvSim.addEventListener("pointermove", (e) => {
     pointerX = (e.clientX - ORIGIN_X) / -inputScaling;
     pointerY = (e.clientY - ORIGIN_Y) / -inputScaling;
-    if (pointerX * 10 < Math.floor(pointerX * 10) + 0.5) {
-        pointerX = Math.floor(pointerX * 10) / 10;
-    } else {
-        pointerX = (Math.floor(pointerX * 10) + 0.5) / 10;
-    }
-    if (pointerY * 10 < Math.floor(pointerY * 10) + 0.5) {
-        pointerY = Math.floor(pointerY * 10) / 10;
-    } else {
-        pointerY = (Math.floor(pointerY * 10) + 0.5) / 10;
-    }
     if (isHolding.obj) {
         doInputEl.value = Math.max(Math.min(pointerX, 15), 0);
         hoInputEl.value = Math.max(Math.min(pointerY, 15), 0);
@@ -106,7 +96,9 @@ cvSim.addEventListener("pointermove", (e) => {
     }
 });
 
-cvSim.addEventListener("pointerdown", () => {
+cvSim.addEventListener("pointerdown", (e) => {
+    pointerX = (e.clientX - ORIGIN_X) / -inputScaling;
+    pointerY = (e.clientY - ORIGIN_Y) / -inputScaling;
     if (
         isAroundObj(
             ORIGIN_X - pointerX * inputScaling,
@@ -182,7 +174,7 @@ function drawLine(
         lineColor: "black",
     },
 ) {
-    const precision = 0.1;
+    const precision = 1;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const minX = Math.min(x1, x2);
@@ -192,9 +184,12 @@ function drawLine(
 
     let noPixel = false;
 
-    if (dx === 0) {
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        const m = dy / dx;
+        let y = minX === x1 ? y1 : y2;
         let partsCount = 0;
-        for (let y = minY; y <= maxY; y += precision) {
+        for (let x = minX; x <= maxX; x += precision) {
+            y += m * precision;
             if (lineStyle === "dashed") {
                 if ((partsCount * precision) % 12 === 0) {
                     noPixel = !noPixel;
@@ -203,25 +198,24 @@ function drawLine(
                 if (noPixel) continue;
             }
             ctx.fillStyle = lineColor;
-            ctx.fillRect(x1, y, 1, 1);
+            ctx.fillRect(x, y, 1, 1);
         }
-        return;
-    }
-
-    const m = dy / dx;
-    let y = minX === x1 ? y1 : y2;
-    let partsCount = 0;
-    for (let x = minX; x <= maxX; x += precision) {
-        y += m * precision;
-        if (lineStyle === "dashed") {
-            if ((partsCount * precision) % 12 === 0) {
-                noPixel = !noPixel;
+    } else {
+        const m = dx / dy;
+        let x = minY === y1 ? x1 : x2;
+        let partsCount = 0;
+        for (let y = minY; y <= maxY; y += precision) {
+            x += m * precision;
+            if (lineStyle === "dashed") {
+                if ((partsCount * precision) % 12 === 0) {
+                    noPixel = !noPixel;
+                }
+                partsCount += 1;
+                if (noPixel) continue;
             }
-            partsCount += 1;
-            if (noPixel) continue;
+            ctx.fillStyle = lineColor;
+            ctx.fillRect(x, y, 1, 1);
         }
-        ctx.fillStyle = lineColor;
-        ctx.fillRect(x, y, 1, 1);
     }
 }
 
@@ -235,18 +229,18 @@ function drawLine(
  * @param {number} a2
  */
 function drawCircle(ctx, cx, cy, r, a1, a2) {
-    const precision = 0.1;
     if (Math.abs(a1) > 360) a1 = a1 % 360;
     if (Math.abs(a2) > 360) a2 = a2 % 360;
+    const da = a2 - a1;
     if (a1 < a2) {
-        for (let a = a1; a <= a2; a += precision) {
+        for (let a = a1; a <= a2; a += Math.abs(da / r)) {
             const x = r * Math.cos((Math.PI / 180) * a);
             const y = r * Math.sin((Math.PI / 180) * a);
             ctx.fillStyle = "black";
             ctx.fillRect(cx + x, cy + y, 1, 1);
         }
     } else if (a1 > a2) {
-        for (let a = a1; a >= a2; a -= precision) {
+        for (let a = a1; a >= a2; a -= Math.abs(da / r)) {
             const x = r * Math.cos((Math.PI / 180) * a);
             const y = r * Math.sin((Math.PI / 180) * a);
             ctx.fillStyle = "black";
@@ -304,7 +298,7 @@ function drawCurvature(ctx) {
 function drawObj(ctx) {
     drawLine(ctx, ORIGIN_X - d_o, ORIGIN_Y, ORIGIN_X - d_o, ORIGIN_Y - h_o);
 
-    const hatRadius = 0.75 * inputScaling * (h_o / inputScaling);
+    const hatRadius = 0.75 * h_o;
 
     drawCircle(
         ctx,
@@ -330,7 +324,7 @@ function drawObj(ctx) {
 function drawObjImg(ctx) {
     drawLine(ctx, ORIGIN_X - d_i, ORIGIN_Y, ORIGIN_X - d_i, ORIGIN_Y - h_i);
 
-    const hatRadius = 0.75 * inputScaling * (h_i / inputScaling);
+    const hatRadius = 0.75 * h_i;
 
     drawCircle(
         ctx,

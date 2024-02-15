@@ -64,3 +64,10 @@
 
     touch-action: none;
 }
+
+@media screen and (max-width: 420px) {
+    .controls {
+        left: 1rem;
+        right: 1rem;
+    }
+}

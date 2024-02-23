@@ -1,78 +1,44 @@
 <!doctype html>
 <html lang="id">
-    <head>
-        <title></title>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link href="./index.css" rel="stylesheet" />
-    </head>
 
-    <body>
-        <div class="controls">
-            <div class="input-wrapper">
-                <input
-                    class="choice-controls-input"
-                    type="radio"
-                    name="type"
-                    id="cekung"
-                    value="1"
-                    checked
-                    hidden
-                />
-                <label class="choice-controls-label" for="cekung"
-                    ><button>Cekung</button></label
-                >
+<head>
+    <title></title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="./index.css" rel="stylesheet" />
+</head>
 
-                <input
-                    class="choice-controls-input"
-                    type="radio"
-                    name="type"
-                    id="cembung"
-                    value="-1"
-                    hidden
-                />
-                <label class="choice-controls-label" for="cembung"
-                    ><button>Cembung</button></label
-                >
-            </div>
-            <div class="input-wrapper">
-                <label for="do">Jarak Objek (do)</label>
-                <input
-                    type="range"
-                    name="do"
-                    id="do"
-                    value="2"
-                    min="0"
-                    max="15"
-                    step="0.05"
-                />
-            </div>
-            <div class="input-wrapper">
-                <label for="ho">Tinggi Objek (ho)</label>
-                <input
-                    type="range"
-                    name="ho"
-                    id="ho"
-                    value="2"
-                    min="0"
-                    max="15"
-                    step="0.05"
-                />
-            </div>
-            <div class="input-wrapper">
-                <label for="f">Jarak Fokus (f)</label>
-                <input
-                    type="range"
-                    name="f"
-                    id="f"
-                    value="2.5"
-                    min="0"
-                    max="15"
-                    step="0.05"
-                />
-            </div>
+<body>
+    <div class="controls">
+        <div class="input-wrapper">
+            <input class="choice-controls-input" type="radio" name="sim" id="cermin" value="1" checked hidden />
+            <label class="choice-controls-label" for="cermin"><button>Cermin</button></label>
+
+            <input class="choice-controls-input" type="radio" name="sim" id="lensa" value="-1" hidden />
+            <label class="choice-controls-label" for="lensa"><button>Lensa</button></label>
         </div>
-        <canvas id="cv-sim"> </canvas>
-        <script src="./index.js"></script>
-    </body>
+        <div class="input-wrapper">
+            <input class="choice-controls-input" type="radio" name="type" id="cekung" value="1" checked hidden />
+            <label class="choice-controls-label" for="cekung"><button>Cekung</button></label>
+
+            <input class="choice-controls-input" type="radio" name="type" id="cembung" value="-1" hidden />
+            <label class="choice-controls-label" for="cembung"><button>Cembung</button></label>
+        </div>
+        <div class="input-wrapper">
+            <label for="do">Jarak Objek (do)</label>
+            <input type="range" name="do" id="do" value="2" min="0" max="15" step="0.05" />
+        </div>
+        <div class="input-wrapper">
+            <label for="ho">Tinggi Objek (ho)</label>
+            <input type="range" name="ho" id="ho" value="2" min="0" max="15" step="0.05" />
+        </div>
+        <div class="input-wrapper">
+            <label for="f">Jarak Fokus (f)</label>
+            <input type="range" name="f" id="f" value="2.5" min="0" max="15" step="0.05" />
+        </div>
+    </div>
+    <canvas id="cv-sim"> </canvas>
+    <script src="./index.js"></script>
+</body>
+
 </html>

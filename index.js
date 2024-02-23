@@ -26,9 +26,15 @@ let d_i;
  */
 let h_i;
 
+let simMult;
+let typeMult;
+
 const fInputEl = document.getElementById("f");
 const doInputEl = document.getElementById("do");
 const hoInputEl = document.getElementById("ho");
+
+const simMirrorInputEl = document.getElementById("cermin");
+const simLensInputEl = document.getElementById("lensa");
 
 const typeCekungInputEl = document.getElementById("cekung");
 const typeCembungInputEl = document.getElementById("cembung");
@@ -67,6 +73,14 @@ hoInputEl.addEventListener("input", () => {
     requestAnimationFrame(all);
 });
 
+simMirrorInputEl.addEventListener("change", () => {
+    requestAnimationFrame(all);
+});
+
+simLensInputEl.addEventListener("change", () => {
+    requestAnimationFrame(all);
+});
+
 typeCekungInputEl.addEventListener("change", () => {
     requestAnimationFrame(all);
 });
@@ -77,7 +91,7 @@ typeCembungInputEl.addEventListener("change", () => {
 
 let pointerX = 0;
 let pointerY = 0;
-let isHolding = { obj: false, focal: false };
+let isHolding = { obj: false, focal: false, secondFocal: false };
 
 cvSim.addEventListener("pointermove", (e) => {
     pointerX = (e.clientX - ORIGIN_X) / -inputScaling;
@@ -87,7 +101,10 @@ cvSim.addEventListener("pointermove", (e) => {
         hoInputEl.value = Math.max(Math.min(pointerY, 15), 0);
         requestAnimationFrame(all);
     }
-    if (isHolding.focal) {
+    if (isHolding.focal || isHolding.secondFocal) {
+        if (isHolding.secondFocal) {
+            pointerX *= -1;
+        }
         if (f < 0) {
             pointerX *= -1;
         }
@@ -115,11 +132,20 @@ cvSim.addEventListener("pointerdown", (e) => {
     ) {
         isHolding.focal = true;
     }
+    if (
+        isAroundSecondFocal(
+            ORIGIN_X - pointerX * inputScaling,
+            ORIGIN_Y - pointerY * inputScaling,
+        )
+    ) {
+        isHolding.secondFocal = true;
+    }
 });
 
 cvSim.addEventListener("pointerup", () => {
     isHolding.obj = false;
     isHolding.focal = false;
+    isHolding.secondFocal = false;
 });
 
 /**
@@ -129,7 +155,8 @@ cvSim.addEventListener("pointerup", () => {
  * @returns {boolean}
  */
 function isAroundObj(x, y) {
-    const hatRadius = 0.75 * h_o;
+    const threshold = 25;
+    const hatRadius = Math.max(0.75 * h_o, threshold);
     return (
         x >= ORIGIN_X - d_o - hatRadius &&
         x <= ORIGIN_X - d_o + hatRadius &&
@@ -149,6 +176,22 @@ function isAroundFocal(x, y) {
     return (
         x >= ORIGIN_X - f - threshold &&
         x <= ORIGIN_X - f + threshold &&
+        y >= ORIGIN_Y - threshold &&
+        y <= ORIGIN_Y + threshold
+    );
+}
+
+/**
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+function isAroundSecondFocal(x, y) {
+    const threshold = 25;
+    return (
+        x >= ORIGIN_X + f - threshold &&
+        x <= ORIGIN_X + f + threshold &&
         y >= ORIGIN_Y - threshold &&
         y <= ORIGIN_Y + threshold
     );
@@ -260,7 +303,7 @@ function drawPrincipalLine(ctx) {
  * @function
  * @param {CanvasRenderingContext2D} ctx
  */
-function drawMirrorCenter(ctx) {
+function drawVertCenter(ctx) {
     drawLine(ctx, ORIGIN_X, 0, ORIGIN_X, CANVAS_HEIGHT);
 }
 
@@ -276,6 +319,20 @@ function drawMirror(ctx) {
  * @function
  * @param {CanvasRenderingContext2D} ctx
  */
+function drawLens(ctx) {
+    if (typeMult === 1) {
+        drawCircle(ctx, ORIGIN_X - f * 2, ORIGIN_Y, f * 2, -45, 45);
+        drawCircle(ctx, ORIGIN_X + f * 2, ORIGIN_Y, -f * 2, -45, 45);
+    } else if (typeMult === -1) {
+        drawCircle(ctx, ORIGIN_X + f * 1.4, ORIGIN_Y, -f * 2, -45, 45);
+        drawCircle(ctx, ORIGIN_X - f * 1.4, ORIGIN_Y, f * 2, -45, 45);
+    }
+}
+
+/**
+ * @function
+ * @param {CanvasRenderingContext2D} ctx
+ */
 function drawFocal(ctx) {
     ctx.fillStyle = "black";
     ctx.fillRect(ORIGIN_X - f, ORIGIN_Y, 4, 4);
@@ -285,9 +342,27 @@ function drawFocal(ctx) {
  * @function
  * @param {CanvasRenderingContext2D} ctx
  */
+function drawSecondFocal(ctx) {
+    ctx.fillStyle = "black";
+    ctx.fillRect(ORIGIN_X + f, ORIGIN_Y, 4, 4);
+}
+
+/**
+ * @function
+ * @param {CanvasRenderingContext2D} ctx
+ */
 function drawCurvature(ctx) {
     ctx.fillStyle = "black";
     ctx.fillRect(ORIGIN_X - f * 2, ORIGIN_Y, 4, 4);
+}
+
+/**
+ * @function
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawSecondCurvature(ctx) {
+    ctx.fillStyle = "black";
+    ctx.fillRect(ORIGIN_X + f * 2, ORIGIN_Y, 4, 4);
 }
 
 /**
@@ -346,7 +421,7 @@ function drawObjImg(ctx) {
  * @function
  * @param {CanvasRenderingContext2D} ctx
  */
-function drawRaylines(ctx) {
+function drawMirrorRaylines(ctx) {
     const objLeft = ORIGIN_X - d_o;
     const objTop = ORIGIN_Y - h_o;
     const fPos = ORIGIN_X - f;
@@ -522,15 +597,163 @@ function drawRaylines(ctx) {
  * @function
  * @param {CanvasRenderingContext2D} ctx
  */
+function drawLensRaylines(ctx) {
+    const objLeft = ORIGIN_X - d_o;
+    const objTop = ORIGIN_Y - h_o;
+    const f1Pos = ORIGIN_X - f;
+    const f2Pos = ORIGIN_X + f;
+    const cPos = ORIGIN_X - f * 2;
+
+    // Rule 1
+    const m1 = (ORIGIN_Y - objTop) / (f2Pos - ORIGIN_X);
+    const c1 = ORIGIN_Y - m1 * f2Pos;
+    drawLine(ctx, 0, objTop, ORIGIN_X, objTop, { lineColor: "red" });
+    if (m1 !== 0) {
+        if (f <= 0) {
+            drawLine(ctx, ORIGIN_X, objTop, (0 - c1) / m1, 0, {
+                lineColor: "red",
+            });
+            drawLine(
+                ctx,
+                ORIGIN_X,
+                objTop,
+                (CANVAS_HEIGHT - c1) / m1,
+                CANVAS_HEIGHT,
+                { lineStyle: "dashed", lineColor: "red" },
+            );
+        } else {
+            drawLine(
+                ctx,
+                ORIGIN_X,
+                objTop,
+                (CANVAS_HEIGHT - c1) / m1,
+                CANVAS_HEIGHT,
+                { lineColor: "red" },
+            );
+            if (f > d_o) {
+                drawLine(ctx, ORIGIN_X, objTop, (0 - c1) / m1, 0, {
+                    lineStyle: "dashed",
+                    lineColor: "red",
+                });
+            }
+        }
+    }
+
+    // Rule 2
+    const m2 = (ORIGIN_Y - objTop) / (ORIGIN_X - objLeft);
+    const c2 = ORIGIN_Y - m2 * ORIGIN_X;
+    if (m2 !== 0) {
+        drawLine(
+            ctx,
+            (0 - c2) / m2,
+            0,
+            (CANVAS_HEIGHT - c2) / m2,
+            CANVAS_HEIGHT,
+            {
+                lineColor: "green",
+            },
+        );
+    }
+
+    // Rule 3
+    if (f !== d_o) {
+        const m3 = (ORIGIN_Y - objTop) / (f1Pos - objLeft);
+        const c3 = ORIGIN_Y - m3 * f1Pos;
+        drawLine(
+            ctx,
+            ORIGIN_X,
+            ORIGIN_X * m3 + c3,
+            CANVAS_WIDTH,
+            ORIGIN_X * m3 + c3,
+            { lineColor: "blue" },
+        );
+        if (m3 !== 0) {
+            if (f < d_o) {
+                drawLine(ctx, (0 - c3) / m3, 0, ORIGIN_X, ORIGIN_X * m3 + c3, {
+                    lineColor: "blue",
+                });
+                if (f < 0) {
+                    drawLine(
+                        ctx,
+                        ORIGIN_X,
+                        ORIGIN_X * m3 + c3,
+                        0,
+                        ORIGIN_X * m3 + c3,
+                        {
+                            lineStyle: "dashed",
+                            lineColor: "blue",
+                        },
+                    );
+                }
+            } else {
+                drawLine(ctx, 0, 0 * m3 + c3, ORIGIN_X, ORIGIN_X * m3 + c3, {
+                    lineColor: "blue",
+                });
+                if (f > 0) {
+                    drawLine(
+                        ctx,
+                        ORIGIN_X,
+                        ORIGIN_X * m3 + c3,
+                        0,
+                        ORIGIN_X * m3 + c3,
+                        {
+                            lineStyle: "dashed",
+                            lineColor: "blue",
+                        },
+                    );
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @function
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawRaylines(ctx) {
+    if (simMult === 1) {
+        drawMirrorRaylines(ctx);
+    } else if (simMult === -1) {
+        drawLensRaylines(ctx);
+    }
+}
+
+/**
+ * @function
+ * @param {CanvasRenderingContext2D} ctx
+ */
 function drawLabels(ctx) {
     const fontSize = 16;
     ctx.font = `${fontSize}px Arial`;
     ctx.fillStyle = "black";
     ctx.textAlign = "left";
-    ctx.fillText("Fokus", ORIGIN_X - f, ORIGIN_Y);
-    ctx.fillText(f / inputScaling, ORIGIN_X - f, ORIGIN_Y + fontSize);
-    ctx.fillText("Curvature", ORIGIN_X - f * 2, ORIGIN_Y);
-    ctx.fillText((f * 2) / inputScaling, ORIGIN_X - f * 2, ORIGIN_Y + fontSize);
+
+    if (simMult === 1) {
+        ctx.fillText("Fokus", ORIGIN_X - f, ORIGIN_Y);
+        ctx.fillText(f / inputScaling, ORIGIN_X - f, ORIGIN_Y + fontSize);
+
+        ctx.fillText("Curvature", ORIGIN_X - f * 2, ORIGIN_Y);
+    } else if (simMult === -1) {
+        ctx.fillText("Fokus (1)", ORIGIN_X - f, ORIGIN_Y);
+        ctx.fillText(f / inputScaling, ORIGIN_X - f, ORIGIN_Y + fontSize);
+        ctx.fillText("Fokus (2)", ORIGIN_X + f, ORIGIN_Y);
+        ctx.fillText(-f / inputScaling, ORIGIN_X + f, ORIGIN_Y + fontSize);
+
+        ctx.fillText("Curvature (1)", ORIGIN_X - f * 2, ORIGIN_Y);
+        ctx.fillText(
+            (f * 2) / inputScaling,
+            ORIGIN_X - f * 2,
+            ORIGIN_Y + fontSize,
+        );
+        ctx.fillText("Curvature (2)", ORIGIN_X + f * 2, ORIGIN_Y);
+        ctx.fillText(
+            -(f * 2) / inputScaling,
+            ORIGIN_X + f * 2,
+            ORIGIN_Y + fontSize,
+        );
+    }
+
     ctx.fillText("Objek", ORIGIN_X - d_o, ORIGIN_Y - h_o);
     ctx.fillText(d_o / inputScaling, ORIGIN_X - d_o, ORIGIN_Y + fontSize);
     ctx.textAlign = "right";
@@ -550,10 +773,18 @@ function drawLabels(ctx) {
 function draw() {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     drawPrincipalLine(ctx);
-    drawMirrorCenter(ctx);
-    drawMirror(ctx);
+    drawVertCenter(ctx);
+    if (simMult === 1) {
+        drawMirror(ctx);
+    } else if (simMult === -1) {
+        drawLens(ctx);
+    }
     drawFocal(ctx);
     drawCurvature(ctx);
+    if (simMult === -1) {
+        drawSecondFocal(ctx);
+        drawSecondCurvature(ctx);
+    }
     drawObj(ctx);
     if (f !== d_o) {
         drawObjImg(ctx);
@@ -563,19 +794,25 @@ function draw() {
 }
 
 function update() {
+    const selectedSim = document.querySelector('input[name="sim"]:checked');
     const selectedType = document.querySelector('input[name="type"]:checked');
-    f = Number(selectedType.value) * inputScaling * Number(fInputEl.value);
+    simMult = Number(selectedSim.value);
+    typeMult = Number(selectedType.value);
+    f = simMult * typeMult * inputScaling * Number(fInputEl.value);
     d_o = inputScaling * Number(doInputEl.value);
     h_o = inputScaling * Number(hoInputEl.value);
 
-    d_i = (f * d_o) / (d_o - f);
-    const M = -d_i / d_o;
+    d_i = (simMult * f * d_o) / (d_o - f);
+    const M = (-simMult * d_i) / d_o;
     h_i = M * h_o;
 }
 
 function setup() {
+    const selectedSim = document.querySelector('input[name="sim"]:checked');
     const selectedType = document.querySelector('input[name="type"]:checked');
-    f = Number(selectedType.value) * inputScaling * Number(fInputEl.value);
+    simMult = Number(selectedSim.value);
+    typeMult = Number(selectedType.value);
+    f = typeMult * inputScaling * Number(fInputEl.value);
     d_o = inputScaling * Number(doInputEl.value);
     h_o = inputScaling * Number(hoInputEl.value);
 }

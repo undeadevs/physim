@@ -140,6 +140,9 @@ cvSim.addEventListener("pointerdown", (e) => {
     ) {
         isHolding.secondFocal = true;
     }
+    if (simMult === 1) {
+        isHolding.secondFocal = false;
+    }
 });
 
 cvSim.addEventListener("pointerup", () => {

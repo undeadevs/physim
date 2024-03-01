@@ -5,9 +5,18 @@
 }
 
 .controls {
+    --_offset-x: 0rem;
+    --_offset-y: 0rem;
+
+    --_el-w: 21.5rem;
+    --_el-h: 14rem;
+
     position: fixed;
-    bottom: 1rem;
-    right: 1rem;
+    bottom: max(
+        min(1rem + var(--_offset-y), 100vh - 1rem - var(--_el-h)),
+        1rem
+    );
+    right: max(min(1rem + var(--_offset-x), 100vw - 1rem - var(--_el-w)), 1rem);
 
     display: grid;
     gap: 0.5rem;
@@ -16,6 +25,16 @@
     padding: 1rem;
 
     border-radius: 0.5rem;
+
+    transition:
+        width 250ms ease-out,
+        height 250ms ease-out,
+        gap 250ms ease-out,
+        border-radius 250ms ease-out;
+
+    overflow: hidden;
+
+    touch-action: none;
 }
 
 .controls > .input-wrapper {
@@ -24,6 +43,7 @@
 }
 
 .controls > .input-wrapper > label {
+    user-select: none;
     flex: 1;
     color: white;
 }
@@ -31,7 +51,6 @@
 .controls > .input-wrapper > .choice-controls-input + .choice-controls-label {
     cursor: pointer;
 }
-
 .controls
     > .input-wrapper
     > .choice-controls-input
@@ -55,19 +74,76 @@
     opacity: 1;
 }
 
+.controls > .action-btn {
+    justify-self: end;
+
+    display: grid;
+    place-content: center;
+
+    cursor: pointer;
+
+    width: 2rem;
+    height: 2rem;
+    font-size: 2rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 100%;
+
+    transform-origin: center;
+    transform: rotate(45deg);
+
+    background-color: transparent;
+    color: white;
+
+    transition: transform 250ms ease-out;
+}
+
+.controls > .action-btn::before {
+    content: "+";
+}
+
+#controls-toggle:checked + .controls {
+    --_el-w: 4rem;
+    --_el-h: 4rem;
+
+    gap: 0;
+    border-radius: 100%;
+}
+
+#controls-toggle + .controls > .input-wrapper {
+    max-height: 100%;
+    overflow: hidden;
+    transition: width 250ms ease-out;
+}
+
+#controls-toggle:checked + .controls > .input-wrapper {
+    width: 0px;
+    max-height: 0px;
+}
+
+#controls-toggle:checked + .controls > .action-btn {
+    display: grid;
+    transform: rotate(0deg);
+}
+
+#controls-toggle:checked + .controls > .action-btn::before {
+    content: "o";
+}
+
 #cv-sim {
     --input-scaling: 50px;
+    --origin-x: 50vw;
+    --origin-y: 50vh;
     background: linear-gradient(to right, transparent 98%, lightgray 98%),
         linear-gradient(to bottom, transparent 98%, lightgray 98%);
     background-size: var(--input-scaling) var(--input-scaling);
-    background-position: 50vw 50vh;
+    background-position: var(--origin-x) var(--origin-y);
 
     touch-action: none;
 }
 
 @media screen and (max-width: 420px) {
-    .controls {
-        left: 1rem;
-        right: 1rem;
+    .controls * {
+        font-size: 0.75rem;
     }
 }

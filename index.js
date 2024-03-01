@@ -29,6 +29,8 @@ let h_i;
 let simMult;
 let typeMult;
 
+const controlsContainerEl = document.querySelector(".controls");
+
 const fInputEl = document.getElementById("f");
 const doInputEl = document.getElementById("do");
 const hoInputEl = document.getElementById("ho");
@@ -44,11 +46,6 @@ const typeCembungInputEl = document.getElementById("cembung");
  */
 const cvSim = document.getElementById("cv-sim");
 const ctx = cvSim.getContext("2d");
-
-cvSim.width = CANVAS_WIDTH;
-cvSim.height = CANVAS_HEIGHT;
-
-cvSim.style.setProperty("--input-scaling", inputScaling + "px");
 
 window.addEventListener("resize", () => {
     CANVAS_WIDTH = window.innerWidth;
@@ -91,64 +88,192 @@ typeCembungInputEl.addEventListener("change", () => {
 
 let pointerX = 0;
 let pointerY = 0;
-let isHolding = { obj: false, focal: false, secondFocal: false };
+let isHolding = {
+    controlsContainer: false,
+    cvSim: false,
+    obj: false,
+    objImg: false,
+    focal: false,
+    secondFocal: false,
+    curvature: false,
+    secondCurvature: false,
+};
+
+document.body.addEventListener("pointermove", (e) => {
+    if (e.target === controlsContainerEl) e.preventDefault();
+
+    if (isHolding.controlsContainer) {
+        controlsContainerEl.style.setProperty(
+            "--_offset-x",
+            `${window.innerWidth - e.clientX - controlsContainerEl.clientWidth / 2}px`,
+        );
+        controlsContainerEl.style.setProperty(
+            "--_offset-y",
+            `${window.innerHeight - e.clientY - controlsContainerEl.clientHeight / 4}px`,
+        );
+    }
+});
+
+controlsContainerEl.addEventListener("pointerdown", (e) => {
+    if (e.target === controlsContainerEl) e.preventDefault();
+    if (
+        e.target !== controlsContainerEl &&
+        e.target.parentElement !== controlsContainerEl
+    )
+        return;
+    isHolding.controlsContainer = true;
+});
+
+document.body.addEventListener("pointerup", (e) => {
+    if (e.target === controlsContainerEl) e.preventDefault();
+    isHolding.controlsContainer = false;
+});
 
 cvSim.addEventListener("pointermove", (e) => {
-    pointerX = (e.clientX - ORIGIN_X) / -inputScaling;
-    pointerY = (e.clientY - ORIGIN_Y) / -inputScaling;
-    if (isHolding.obj) {
-        doInputEl.value = Math.max(Math.min(pointerX, 15), 0);
-        hoInputEl.value = Math.max(Math.min(pointerY, 15), 0);
-        requestAnimationFrame(all);
-    }
+    let pointerXUnscaled = (e.clientX - ORIGIN_X) / -inputScaling;
+    let pointerYUnscaled = (e.clientY - ORIGIN_Y) / -inputScaling;
+
+    const dPointerX = e.clientX - pointerX;
+    const dPointerY = e.clientY - pointerY;
+
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+
     if (isHolding.focal || isHolding.secondFocal) {
         if (isHolding.secondFocal) {
-            pointerX *= -1;
+            pointerXUnscaled *= -1;
         }
-        if (f < 0) {
-            pointerX *= -1;
+        if (simMult * typeMult === -1) {
+            pointerXUnscaled *= -1;
         }
-        fInputEl.value = Math.max(Math.min(pointerX, 15), 0);
+        fInputEl.value = Math.max(Math.min(pointerXUnscaled, doInputEl.max), 0);
+        requestAnimationFrame(all);
+        return;
+    }
+    if (isHolding.curvature || isHolding.secondCurvature) {
+        if (isHolding.secondCurvature) {
+            pointerXUnscaled *= -1;
+        }
+        if (simMult * typeMult === -1) {
+            pointerXUnscaled *= -1;
+        }
+        fInputEl.value = Math.max(
+            Math.min(pointerXUnscaled / 2, fInputEl.max),
+            0,
+        );
+        requestAnimationFrame(all);
+        return;
+    }
+    if (isHolding.obj) {
+        doInputEl.value = Math.max(
+            Math.min(pointerXUnscaled, doInputEl.max),
+            0,
+        );
+        hoInputEl.value = Math.max(
+            Math.min(pointerYUnscaled, hoInputEl.max),
+            0,
+        );
+        requestAnimationFrame(all);
+        return;
+    }
+    if (isHolding.objImg) {
+        const diUnscaled = pointerXUnscaled;
+        const hiUnscaled = pointerYUnscaled;
+        const fUnscaled = (simMult * f) / inputScaling;
+
+        const doUnscaled =
+            (simMult * fUnscaled * diUnscaled) / (diUnscaled - fUnscaled);
+        const M = (-simMult * diUnscaled) / doUnscaled;
+        const hoUnscaled = hiUnscaled / M;
+
+        doInputEl.value = Math.max(Math.min(doUnscaled, doInputEl.max), 0);
+        hoInputEl.value = Math.max(Math.min(hoUnscaled, hoInputEl.max), 0);
+
+        requestAnimationFrame(all);
+        return;
+    }
+    if (isHolding.cvSim) {
+        ORIGIN_X += dPointerX;
+        ORIGIN_Y += dPointerY;
         requestAnimationFrame(all);
     }
 });
 
 cvSim.addEventListener("pointerdown", (e) => {
-    pointerX = (e.clientX - ORIGIN_X) / -inputScaling;
-    pointerY = (e.clientY - ORIGIN_Y) / -inputScaling;
+    const pointerXUnscaled = (e.clientX - ORIGIN_X) / -inputScaling;
+    const pointerYUnscaled = (e.clientY - ORIGIN_Y) / -inputScaling;
+
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+
     if (
         isAroundObj(
-            ORIGIN_X - pointerX * inputScaling,
-            ORIGIN_Y - pointerY * inputScaling,
+            ORIGIN_X - pointerXUnscaled * inputScaling,
+            ORIGIN_Y - pointerYUnscaled * inputScaling,
         )
     ) {
         isHolding.obj = true;
     }
     if (
+        isAroundObjImg(
+            ORIGIN_X - pointerXUnscaled * inputScaling,
+            ORIGIN_Y - pointerYUnscaled * inputScaling,
+        )
+    ) {
+        isHolding.objImg = true;
+    }
+    if (
         isAroundFocal(
-            ORIGIN_X - pointerX * inputScaling,
-            ORIGIN_Y - pointerY * inputScaling,
+            ORIGIN_X - pointerXUnscaled * inputScaling,
+            ORIGIN_Y - pointerYUnscaled * inputScaling,
         )
     ) {
         isHolding.focal = true;
     }
     if (
         isAroundSecondFocal(
-            ORIGIN_X - pointerX * inputScaling,
-            ORIGIN_Y - pointerY * inputScaling,
+            ORIGIN_X - pointerXUnscaled * inputScaling,
+            ORIGIN_Y - pointerYUnscaled * inputScaling,
         )
     ) {
         isHolding.secondFocal = true;
     }
-    if (simMult === 1) {
-        isHolding.secondFocal = false;
+    if (
+        isAroundCurvature(
+            ORIGIN_X - pointerXUnscaled * inputScaling,
+            ORIGIN_Y - pointerYUnscaled * inputScaling,
+        )
+    ) {
+        isHolding.curvature = true;
     }
+    if (
+        isAroundSecondCurvature(
+            ORIGIN_X - pointerXUnscaled * inputScaling,
+            ORIGIN_Y - pointerYUnscaled * inputScaling,
+        )
+    ) {
+        isHolding.secondCurvature = true;
+    }
+    if (simMult === 1 || isHolding.focal || isHolding.curvature) {
+        isHolding.secondFocal = false;
+        isHolding.secondCurvature = false;
+    }
+    isHolding.cvSim = true;
 });
 
-cvSim.addEventListener("pointerup", () => {
+cvSim.addEventListener("pointerup", (e) => {
+    isHolding.controlsContainer = false;
+
+    isHolding.cvSim = false;
     isHolding.obj = false;
+    isHolding.objImg = false;
     isHolding.focal = false;
     isHolding.secondFocal = false;
+    isHolding.curvature = false;
+    isHolding.secondCurvature = false;
+
+    pointerX = e.clientX;
+    pointerY = e.clientY;
 });
 
 /**
@@ -165,6 +290,23 @@ function isAroundObj(x, y) {
         x <= ORIGIN_X - d_o + hatRadius &&
         y >= ORIGIN_Y - h_o - hatRadius / 2 &&
         y <= ORIGIN_Y - h_o + hatRadius / 4
+    );
+}
+
+/**
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+function isAroundObjImg(x, y) {
+    const threshold = 25;
+    const hatRadius = Math.max(Math.abs(0.75 * h_i), threshold);
+    return (
+        x >= ORIGIN_X - d_i - hatRadius &&
+        x <= ORIGIN_X - d_i + hatRadius &&
+        y >= ORIGIN_Y - h_i - hatRadius / 2 &&
+        y <= ORIGIN_Y - h_i + hatRadius / 4
     );
 }
 
@@ -195,6 +337,38 @@ function isAroundSecondFocal(x, y) {
     return (
         x >= ORIGIN_X + f - threshold &&
         x <= ORIGIN_X + f + threshold &&
+        y >= ORIGIN_Y - threshold &&
+        y <= ORIGIN_Y + threshold
+    );
+}
+
+/**
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+function isAroundCurvature(x, y) {
+    const threshold = 25;
+    return (
+        x >= ORIGIN_X - f * 2 - threshold &&
+        x <= ORIGIN_X - f * 2 + threshold &&
+        y >= ORIGIN_Y - threshold &&
+        y <= ORIGIN_Y + threshold
+    );
+}
+
+/**
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+function isAroundSecondCurvature(x, y) {
+    const threshold = 25;
+    return (
+        x >= ORIGIN_X + f * 2 - threshold &&
+        x <= ORIGIN_X + f * 2 + threshold &&
         y >= ORIGIN_Y - threshold &&
         y <= ORIGIN_Y + threshold
     );
@@ -276,16 +450,15 @@ function drawLine(
 function drawCircle(ctx, cx, cy, r, a1, a2) {
     if (Math.abs(a1) > 360) a1 = a1 % 360;
     if (Math.abs(a2) > 360) a2 = a2 % 360;
-    const da = a2 - a1;
     if (a1 < a2) {
-        for (let a = a1; a <= a2; a += Math.abs(da / r)) {
+        for (let a = a1; a <= a2; a += Math.abs(45 / r)) {
             const x = r * Math.cos((Math.PI / 180) * a);
             const y = r * Math.sin((Math.PI / 180) * a);
             ctx.fillStyle = "black";
             ctx.fillRect(cx + x, cy + y, 1, 1);
         }
     } else if (a1 > a2) {
-        for (let a = a1; a >= a2; a -= Math.abs(da / r)) {
+        for (let a = a1; a >= a2; a -= Math.abs(45 / r)) {
             const x = r * Math.cos((Math.PI / 180) * a);
             const y = r * Math.sin((Math.PI / 180) * a);
             ctx.fillStyle = "black";
@@ -387,10 +560,10 @@ function drawObj(ctx) {
     );
     drawLine(
         ctx,
-        ORIGIN_X - d_o - hatRadius + 7.5 * (h_o / inputScaling),
-        ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / inputScaling),
-        ORIGIN_X - d_o + hatRadius - 7.5 * (h_o / inputScaling),
-        ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / inputScaling),
+        ORIGIN_X - d_o - hatRadius + 7.5 * (h_o / 50),
+        ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
+        ORIGIN_X - d_o + hatRadius - 7.5 * (h_o / 50),
+        ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
     );
 }
 
@@ -413,10 +586,10 @@ function drawObjImg(ctx) {
     );
     drawLine(
         ctx,
-        ORIGIN_X - d_i - hatRadius + 7.5 * (h_i / inputScaling),
-        ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / inputScaling),
-        ORIGIN_X - d_i + hatRadius - 7.5 * (h_i / inputScaling),
-        ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / inputScaling),
+        ORIGIN_X - d_i - hatRadius + 7.5 * (h_i / 50),
+        ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / 50),
+        ORIGIN_X - d_i + hatRadius - 7.5 * (h_i / 50),
+        ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / 50),
     );
 }
 
@@ -433,7 +606,9 @@ function drawMirrorRaylines(ctx) {
     // Rule 1
     const m1 = (ORIGIN_Y - objTop) / (fPos - ORIGIN_X);
     const c1 = ORIGIN_Y - fPos * m1;
-    drawLine(ctx, 0, objTop, ORIGIN_X, objTop, { lineColor: "red" });
+    drawLine(ctx, 0, objTop, ORIGIN_X, objTop, {
+        lineColor: "red",
+    });
     if (m1 !== 0) {
         if (f >= 0) {
             drawLine(
@@ -569,13 +744,22 @@ function drawMirrorRaylines(ctx) {
     // Rule 4
     const m4 = (ORIGIN_Y - objTop) / (ORIGIN_X - objLeft);
     const c4 = ORIGIN_Y - ORIGIN_X * m4;
+    const m4alt = (ORIGIN_Y - (ORIGIN_Y + h_o)) / (ORIGIN_X - objLeft);
+    const c4alt = ORIGIN_Y - ORIGIN_X * m4alt;
     if (m4 !== 0) {
         drawLine(ctx, (0 - c4) / m4, 0, ORIGIN_X, ORIGIN_Y, {
             lineColor: "purple",
         });
-        drawLine(ctx, ORIGIN_X, ORIGIN_Y, (0 - c4) / m4, CANVAS_HEIGHT, {
-            lineColor: "purple",
-        });
+        drawLine(
+            ctx,
+            ORIGIN_X,
+            ORIGIN_Y,
+            (CANVAS_HEIGHT - c4alt) / m4alt,
+            CANVAS_HEIGHT,
+            {
+                lineColor: "purple",
+            },
+        );
     } else {
         drawLine(ctx, 0, ORIGIN_Y, ORIGIN_X, ORIGIN_Y, {
             lineColor: "purple",
@@ -583,7 +767,7 @@ function drawMirrorRaylines(ctx) {
     }
     if (d_i < 0) {
         if (m4 !== 0) {
-            drawLine(ctx, ORIGIN_X, ORIGIN_Y, (CANVAS_HEIGHT - c4) / m4, 0, {
+            drawLine(ctx, ORIGIN_X, ORIGIN_Y, (0 - c4alt) / m4alt, 0, {
                 lineStyle: "dashed",
                 lineColor: "purple",
             });
@@ -737,6 +921,11 @@ function drawLabels(ctx) {
         ctx.fillText(f / inputScaling, ORIGIN_X - f, ORIGIN_Y + fontSize);
 
         ctx.fillText("Curvature", ORIGIN_X - f * 2, ORIGIN_Y);
+        ctx.fillText(
+            (f * 2) / inputScaling,
+            ORIGIN_X - f * 2,
+            ORIGIN_Y + fontSize,
+        );
     } else if (simMult === -1) {
         ctx.fillText("Fokus (1)", ORIGIN_X - f, ORIGIN_Y);
         ctx.fillText(f / inputScaling, ORIGIN_X - f, ORIGIN_Y + fontSize);
@@ -797,6 +986,10 @@ function draw() {
 }
 
 function update() {
+    cvSim.style.setProperty("--input-scaling", inputScaling + "px");
+    cvSim.style.setProperty("--origin-x", ORIGIN_X + "px");
+    cvSim.style.setProperty("--origin-y", ORIGIN_Y + "px");
+
     const selectedSim = document.querySelector('input[name="sim"]:checked');
     const selectedType = document.querySelector('input[name="type"]:checked');
     simMult = Number(selectedSim.value);
@@ -811,6 +1004,16 @@ function update() {
 }
 
 function setup() {
+    cvSim.width = CANVAS_WIDTH;
+    cvSim.height = CANVAS_HEIGHT;
+
+    cvSim.style.setProperty("--input-scaling", inputScaling + "px");
+    cvSim.style.setProperty("--origin-x", ORIGIN_X + "px");
+    cvSim.style.setProperty("--origin-y", ORIGIN_Y + "px");
+
+    doInputEl.max = ORIGIN_X / inputScaling;
+    fInputEl.max = ORIGIN_X / inputScaling;
+
     const selectedSim = document.querySelector('input[name="sim"]:checked');
     const selectedType = document.querySelector('input[name="type"]:checked');
     simMult = Number(selectedSim.value);

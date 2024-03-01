@@ -9,6 +9,7 @@
 </head>
 
 <body>
+    <input type="checkbox" id="controls-toggle" hidden>
     <div class="controls">
         <div class="input-wrapper">
             <input class="choice-controls-input" type="radio" name="sim" id="cermin" value="1" checked hidden />
@@ -36,6 +37,8 @@
             <label for="f">Jarak Fokus (f)</label>
             <input type="range" name="f" id="f" value="2.5" min="0" max="15" step="0.05" />
         </div>
+
+        <label for="controls-toggle" class="action-btn"></button>
     </div>
     <canvas id="cv-sim"> </canvas>
     <script src="./index.js"></script>

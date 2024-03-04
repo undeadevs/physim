@@ -55,6 +55,9 @@ window.addEventListener("resize", () => {
     cvSim.width = CANVAS_WIDTH;
     cvSim.height = CANVAS_HEIGHT;
 
+    doInputEl.max = ORIGIN_X / inputScaling;
+    fInputEl.max = ORIGIN_X / inputScaling;
+
     requestAnimationFrame(all);
 });
 

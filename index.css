@@ -38,14 +38,24 @@
 }
 
 .controls > .input-wrapper {
-    display: flex;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .controls > .input-wrapper > label {
     user-select: none;
-    flex: 1;
     color: white;
+}
+
+.controls > .input-wrapper > select {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    background-color: white;
+    color: black;
+    border: none;
+    border-radius: 0.5rem;
 }
 
 .controls > .input-wrapper > .choice-controls-input + .choice-controls-label {
@@ -128,6 +138,17 @@
 
 #controls-toggle:checked + .controls > .action-btn::before {
     content: "o";
+}
+
+#clear-portal-btn {
+    cursor: pointer;
+    grid-column: 1 / span 2;
+    width: 100%;
+    padding: 0.5rem;
+    background-color: #5e72ad;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
 }
 
 #cv-sim {

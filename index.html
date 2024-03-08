@@ -26,6 +26,20 @@
             <label class="choice-controls-label" for="cembung"><button>Cembung</button></label>
         </div>
         <div class="input-wrapper">
+            <label for="cursor-mode">Mode</label>
+            <select name="cursor_mode" id="cursor-mode">
+                <option value="0" selected>Normal</option>
+                <option value="1">Portal</option>
+            </select>
+        </div>
+        <div class="input-wrapper">
+            <label for="obj">Objek</label>
+            <select name="obj" id="obj">
+                <option value="0" selected>Paku Payung</option>
+                <option value="1">Balon</option>
+            </select>
+        </div>
+        <div class="input-wrapper">
             <label for="do">Jarak Objek (do)</label>
             <input type="range" name="do" id="do" value="2" min="0" max="15" step="0.05" />
         </div>
@@ -36,6 +50,9 @@
         <div class="input-wrapper">
             <label for="f">Jarak Fokus (f)</label>
             <input type="range" name="f" id="f" value="2.5" min="0" max="15" step="0.05" />
+        </div>
+        <div class="input-wrapper">
+            <button id="clear-portal-btn">Clear Portal</button>
         </div>
 
         <label for="controls-toggle" class="action-btn"></button>

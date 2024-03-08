@@ -1,5 +1,11 @@
 let CANVAS_WIDTH = window.innerWidth;
 let CANVAS_HEIGHT = window.innerHeight;
+
+const fps = 60;
+const requiredElapsed = 1000 / fps;
+
+let prevTime = Date.now();
+
 let ORIGIN_X = CANVAS_WIDTH / 2;
 let ORIGIN_Y = CANVAS_HEIGHT / 2;
 
@@ -25,9 +31,52 @@ let d_i;
  * @type {number}
  */
 let h_i;
+/**
+ * @type {number}
+ */
+let M = 0;
 
 let simMult;
 let typeMult;
+
+const CURSOR_NORMAL = 0;
+const CURSOR_PORTAL = 1;
+
+/**
+ * @type {typeof CURSOR_NORMAL | typeof CURSOR_PORTAL}
+ */
+let cursorMode = CURSOR_NORMAL;
+
+const PORTAL_NONE = 0;
+const PORTAL_IN_START = 1;
+const PORTAL_IN_END = 2;
+const PORTAL_OUT_START = 3;
+const PORTAL_OUT_END = 4;
+
+/**
+ * @type {typeof PORTAL_NONE | typeof PORTAL_IN_START | typeof PORTAL_IN_END | typeof PORTAL_OUT_START | typeof PORTAL_OUT_END}
+ */
+let portalShotState = PORTAL_NONE;
+
+let portalIn = { x1: 0, y1: 0, x2: 0, y2: 0, dir: 1 };
+let portalOut = { x1: 0, y1: 0, x2: 0, y2: 0, dir: -1 };
+
+let needleX = -4 * inputScaling;
+let needleY = 3 * inputScaling;
+
+let paperX = 0;
+let paperY = 0;
+
+const OBJ_NAIL = 0;
+const OBJ_BALLOON = 1;
+
+let objType = OBJ_NAIL;
+
+const BALLOON_INFLATED = 0;
+const BALLOON_POPPED = 1;
+const BALLOON_OPENED_PAPER = 2;
+
+let balloonState = BALLOON_INFLATED;
 
 const controlsContainerEl = document.querySelector(".controls");
 
@@ -40,6 +89,12 @@ const simLensInputEl = document.getElementById("lensa");
 
 const typeCekungInputEl = document.getElementById("cekung");
 const typeCembungInputEl = document.getElementById("cembung");
+
+const cursorModeSelectEl = document.getElementById("cursor-mode");
+
+const objTypeSelectEl = document.getElementById("obj");
+
+const clearPortalBtn = document.getElementById("clear-portal-btn");
 
 /**
  * @type {HTMLCanvasElement}
@@ -57,36 +112,6 @@ window.addEventListener("resize", () => {
 
     doInputEl.max = ORIGIN_X / inputScaling;
     fInputEl.max = ORIGIN_X / inputScaling;
-
-    requestAnimationFrame(all);
-});
-
-fInputEl.addEventListener("input", () => {
-    requestAnimationFrame(all);
-});
-
-doInputEl.addEventListener("input", () => {
-    requestAnimationFrame(all);
-});
-
-hoInputEl.addEventListener("input", () => {
-    requestAnimationFrame(all);
-});
-
-simMirrorInputEl.addEventListener("change", () => {
-    requestAnimationFrame(all);
-});
-
-simLensInputEl.addEventListener("change", () => {
-    requestAnimationFrame(all);
-});
-
-typeCekungInputEl.addEventListener("change", () => {
-    requestAnimationFrame(all);
-});
-
-typeCembungInputEl.addEventListener("change", () => {
-    requestAnimationFrame(all);
 });
 
 let pointerX = 0;
@@ -100,6 +125,7 @@ let isHolding = {
     secondFocal: false,
     curvature: false,
     secondCurvature: false,
+    needle: false,
 };
 
 document.body.addEventListener("pointermove", (e) => {
@@ -142,6 +168,53 @@ cvSim.addEventListener("pointermove", (e) => {
     pointerX = e.clientX;
     pointerY = e.clientY;
 
+    document.body.style.cursor = "default";
+
+    if (cursorMode === CURSOR_PORTAL) {
+        document.body.style.cursor = "crosshair";
+        if (pointerX >= ORIGIN_X || pointerY >= ORIGIN_Y) return;
+
+        switch (portalShotState) {
+            case PORTAL_IN_END:
+                {
+                    portalIn.x2 = ORIGIN_X - pointerX;
+                    portalIn.y2 = ORIGIN_Y - pointerY;
+                }
+                break;
+            case PORTAL_OUT_END:
+                {
+                    portalOut.x2 = ORIGIN_X - pointerX;
+                    portalOut.y2 = ORIGIN_Y - pointerY;
+                }
+                break;
+        }
+    }
+
+    if (cursorMode !== CURSOR_NORMAL) return;
+
+    if (
+        isAroundObj(pointerX, pointerY) ||
+        isAroundObjImg(pointerX, pointerY) ||
+        isAroundFocal(pointerX, pointerY) ||
+        isAroundCurvature(pointerX, pointerY) ||
+        (simMult === -1 &&
+            (isAroundSecondFocal(pointerX, pointerY) ||
+                isAroundSecondCurvature(pointerX, pointerY))) ||
+        isAroundNeedle(pointerX, pointerY)
+    ) {
+        document.body.style.cursor = "grab";
+        if (
+            isHolding.obj ||
+            isHolding.objImg ||
+            isHolding.focal ||
+            isHolding.curvature ||
+            (simMult === -1 &&
+                (isHolding.secondFocal || isHolding.secondCurvature))
+        ) {
+            document.body.style.cursor = "grabbing";
+        }
+    }
+
     if (isHolding.focal || isHolding.secondFocal) {
         if (isHolding.secondFocal) {
             pointerXUnscaled *= -1;
@@ -150,7 +223,6 @@ cvSim.addEventListener("pointermove", (e) => {
             pointerXUnscaled *= -1;
         }
         fInputEl.value = Math.max(Math.min(pointerXUnscaled, doInputEl.max), 0);
-        requestAnimationFrame(all);
         return;
     }
     if (isHolding.curvature || isHolding.secondCurvature) {
@@ -164,7 +236,6 @@ cvSim.addEventListener("pointermove", (e) => {
             Math.min(pointerXUnscaled / 2, fInputEl.max),
             0,
         );
-        requestAnimationFrame(all);
         return;
     }
     if (isHolding.obj) {
@@ -176,7 +247,6 @@ cvSim.addEventListener("pointermove", (e) => {
             Math.min(pointerYUnscaled, hoInputEl.max),
             0,
         );
-        requestAnimationFrame(all);
         return;
     }
     if (isHolding.objImg) {
@@ -192,70 +262,101 @@ cvSim.addEventListener("pointermove", (e) => {
         doInputEl.value = Math.max(Math.min(doUnscaled, doInputEl.max), 0);
         hoInputEl.value = Math.max(Math.min(hoUnscaled, hoInputEl.max), 0);
 
-        requestAnimationFrame(all);
+        return;
+    }
+    if (isHolding.needle && objType === OBJ_BALLOON) {
+        needleX = ORIGIN_X - (pointerX - Math.max(inputScaling, 25));
+        needleY = ORIGIN_Y - pointerY;
+
         return;
     }
     if (isHolding.cvSim) {
         ORIGIN_X += dPointerX;
         ORIGIN_Y += dPointerY;
-        requestAnimationFrame(all);
     }
 });
 
 cvSim.addEventListener("pointerdown", (e) => {
-    const pointerXUnscaled = (e.clientX - ORIGIN_X) / -inputScaling;
-    const pointerYUnscaled = (e.clientY - ORIGIN_Y) / -inputScaling;
-
     pointerX = e.clientX;
     pointerY = e.clientY;
 
-    if (
-        isAroundObj(
-            ORIGIN_X - pointerXUnscaled * inputScaling,
-            ORIGIN_Y - pointerYUnscaled * inputScaling,
-        )
-    ) {
+    document.body.style.cursor = "default";
+
+    if (cursorMode === CURSOR_PORTAL) {
+        document.body.style.cursor = "crosshair";
+        if (pointerX >= ORIGIN_X || pointerY >= ORIGIN_Y) return;
+
+        switch (portalShotState) {
+            case PORTAL_IN_START:
+                {
+                    portalIn.x1 = ORIGIN_X - pointerX;
+                    portalIn.y1 = ORIGIN_Y - pointerY;
+                }
+                break;
+            case PORTAL_IN_END:
+                {
+                    portalIn.x2 = ORIGIN_X - pointerX;
+                    portalIn.y2 = ORIGIN_Y - pointerY;
+                }
+                break;
+            case PORTAL_OUT_START:
+                {
+                    portalOut.x1 = ORIGIN_X - pointerX;
+                    portalOut.y1 = ORIGIN_Y - pointerY;
+                }
+                break;
+            case PORTAL_OUT_END:
+                {
+                    portalOut.x2 = ORIGIN_X - pointerX;
+                    portalOut.y2 = ORIGIN_Y - pointerY;
+                }
+                break;
+        }
+
+        portalShotState += 1;
+        if (portalShotState > PORTAL_OUT_END) portalShotState = PORTAL_IN_START;
+    }
+
+    if (cursorMode !== CURSOR_NORMAL) return;
+
+    if (isAroundObj(pointerX, pointerY)) {
         isHolding.obj = true;
+        document.body.style.cursor = "grabbing";
     }
-    if (
-        isAroundObjImg(
-            ORIGIN_X - pointerXUnscaled * inputScaling,
-            ORIGIN_Y - pointerYUnscaled * inputScaling,
-        )
-    ) {
+    if (isAroundObjImg(pointerX, pointerY)) {
         isHolding.objImg = true;
+        document.body.style.cursor = "grabbing";
     }
-    if (
-        isAroundFocal(
-            ORIGIN_X - pointerXUnscaled * inputScaling,
-            ORIGIN_Y - pointerYUnscaled * inputScaling,
-        )
-    ) {
+    if (isAroundFocal(pointerX, pointerY)) {
         isHolding.focal = true;
+        document.body.style.cursor = "grabbing";
     }
-    if (
-        isAroundSecondFocal(
-            ORIGIN_X - pointerXUnscaled * inputScaling,
-            ORIGIN_Y - pointerYUnscaled * inputScaling,
-        )
-    ) {
+    if (isAroundSecondFocal(pointerX, pointerY)) {
         isHolding.secondFocal = true;
+        document.body.style.cursor = "grabbing";
     }
-    if (
-        isAroundCurvature(
-            ORIGIN_X - pointerXUnscaled * inputScaling,
-            ORIGIN_Y - pointerYUnscaled * inputScaling,
-        )
-    ) {
+    if (isAroundCurvature(pointerX, pointerY)) {
         isHolding.curvature = true;
+        if (simMult === -1) {
+            document.body.style.cursor = "grabbing";
+        }
     }
-    if (
-        isAroundSecondCurvature(
-            ORIGIN_X - pointerXUnscaled * inputScaling,
-            ORIGIN_Y - pointerYUnscaled * inputScaling,
-        )
-    ) {
+    if (isAroundSecondCurvature(pointerX, pointerY)) {
         isHolding.secondCurvature = true;
+        if (simMult === -1) {
+            document.body.style.cursor = "grabbing";
+        }
+    }
+    if (isAroundNeedle(pointerX, pointerY)) {
+        isHolding.needle = true;
+        document.body.style.cursor = "grabbing";
+    }
+    if (isAroundPaper(pointerX, pointerY) && objType === OBJ_BALLOON) {
+        window.open(
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ&pp=ygUJcmljayByb2xs",
+            "_blank",
+        );
+        return;
     }
     if (simMult === 1 || isHolding.focal || isHolding.curvature) {
         isHolding.secondFocal = false;
@@ -274,9 +375,52 @@ cvSim.addEventListener("pointerup", (e) => {
     isHolding.secondFocal = false;
     isHolding.curvature = false;
     isHolding.secondCurvature = false;
+    isHolding.needle = false;
 
     pointerX = e.clientX;
     pointerY = e.clientY;
+
+    document.body.style.cursor = "default";
+
+    if (cursorMode === CURSOR_PORTAL) {
+        document.body.style.cursor = "crosshair";
+        if (pointerX >= ORIGIN_X || pointerY >= ORIGIN_Y) return;
+
+        switch (portalShotState) {
+            case PORTAL_IN_END:
+                {
+                    portalIn.x2 = ORIGIN_X - pointerX;
+                    portalIn.y2 = ORIGIN_Y - pointerY;
+                }
+                break;
+            case PORTAL_OUT_END:
+                {
+                    portalOut.x2 = ORIGIN_X - pointerX;
+                    portalOut.y2 = ORIGIN_Y - pointerY;
+                }
+                break;
+        }
+    }
+
+    if (cursorMode !== CURSOR_NORMAL) return;
+
+    if (
+        isAroundObj(pointerX, pointerY) ||
+        isAroundObjImg(pointerX, pointerY) ||
+        isAroundFocal(pointerX, pointerY) ||
+        isAroundCurvature(pointerX, pointerY) ||
+        (simMult === -1 &&
+            (isAroundSecondFocal(pointerX, pointerY) ||
+                isAroundSecondCurvature(pointerX, pointerY))) ||
+        isAroundNeedle(pointerX, pointerY)
+    ) {
+        document.body.style.cursor = "grab";
+    }
+});
+
+clearPortalBtn.addEventListener("click", () => {
+    portalIn = { x1: 0, y1: 0, x2: 0, y2: 0, dir: 1 };
+    portalOut = { x1: 0, y1: 0, x2: 0, y2: 0, dir: -1 };
 });
 
 /**
@@ -288,12 +432,25 @@ cvSim.addEventListener("pointerup", (e) => {
 function isAroundObj(x, y) {
     const threshold = 25;
     const hatRadius = Math.max(0.75 * h_o, threshold);
-    return (
-        x >= ORIGIN_X - d_o - hatRadius &&
-        x <= ORIGIN_X - d_o + hatRadius &&
-        y >= ORIGIN_Y - h_o - hatRadius / 2 &&
-        y <= ORIGIN_Y - h_o + hatRadius / 4
-    );
+    const balloonRadius = Math.max(45, threshold);
+
+    switch (objType) {
+        case OBJ_NAIL: {
+            return (
+                x >= ORIGIN_X - d_o - hatRadius &&
+                x <= ORIGIN_X - d_o + hatRadius &&
+                y >= ORIGIN_Y - h_o - hatRadius / 2 &&
+                y <= ORIGIN_Y - h_o + hatRadius / 4
+            );
+        }
+        case OBJ_BALLOON: {
+            return (
+                (x - (ORIGIN_X - d_o)) ** 2 +
+                (y - (ORIGIN_Y - h_o + balloonRadius)) ** 2 <=
+                balloonRadius ** 2
+            );
+        }
+    }
 }
 
 /**
@@ -304,13 +461,27 @@ function isAroundObj(x, y) {
  */
 function isAroundObjImg(x, y) {
     const threshold = 25;
-    const hatRadius = Math.max(Math.abs(0.75 * h_i), threshold);
-    return (
-        x >= ORIGIN_X - d_i - hatRadius &&
-        x <= ORIGIN_X - d_i + hatRadius &&
-        y >= ORIGIN_Y - h_i - hatRadius / 2 &&
-        y <= ORIGIN_Y - h_i + hatRadius / 4
-    );
+    const hatRadius = Math.max(0.75 * Math.abs(h_i), threshold);
+    const balloonRadius =
+        Math.sign(h_i) * Math.max(45, threshold) * Math.abs(M);
+
+    switch (objType) {
+        case OBJ_NAIL: {
+            return (
+                x >= ORIGIN_X - d_i - hatRadius &&
+                x <= ORIGIN_X - d_i + hatRadius &&
+                y >= ORIGIN_Y - h_i - hatRadius / 2 &&
+                y <= ORIGIN_Y - h_i + hatRadius / 4
+            );
+        }
+        case OBJ_BALLOON: {
+            return (
+                (x - (ORIGIN_X - d_i)) ** 2 +
+                (y - (ORIGIN_Y - h_i + balloonRadius)) ** 2 <=
+                balloonRadius ** 2
+            );
+        }
+    }
 }
 
 /**
@@ -374,6 +545,37 @@ function isAroundSecondCurvature(x, y) {
         x <= ORIGIN_X + f * 2 + threshold &&
         y >= ORIGIN_Y - threshold &&
         y <= ORIGIN_Y + threshold
+    );
+}
+
+/**
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+function isAroundNeedle(x, y) {
+    const threshold = 25;
+    return (
+        x >= ORIGIN_X - needleX &&
+        x <= ORIGIN_X - needleX + inputScaling &&
+        y >= ORIGIN_Y - needleY - threshold &&
+        y <= ORIGIN_Y - needleY + threshold
+    );
+}
+
+/**
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+function isAroundPaper(x, y) {
+    return (
+        x >= ORIGIN_X - paperX - 25 &&
+        x <= ORIGIN_X - paperX + 25 &&
+        y >= ORIGIN_Y - paperY - 25 &&
+        y <= ORIGIN_Y - paperY + 25
     );
 }
 
@@ -549,25 +751,264 @@ function drawSecondCurvature(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawObj(ctx) {
-    drawLine(ctx, ORIGIN_X - d_o, ORIGIN_Y, ORIGIN_X - d_o, ORIGIN_Y - h_o);
+    const oPortalIn = {
+        x1: ORIGIN_X - portalIn.x1,
+        y1: ORIGIN_Y - portalIn.y1,
+        x2: ORIGIN_X - portalIn.x2,
+        y2: ORIGIN_Y - portalIn.y2,
+    };
+    const oPortalOut = {
+        x1: ORIGIN_X - portalOut.x1,
+        y1: ORIGIN_Y - portalOut.y1,
+        x2: ORIGIN_X - portalOut.x2,
+        y2: ORIGIN_Y - portalOut.y2,
+    };
+
+    const mIn = (oPortalIn.y2 - oPortalIn.y1) / (oPortalIn.x2 - oPortalIn.x1);
+    const cIn = oPortalIn.y2 - mIn * oPortalIn.x2;
+
+    const mOut =
+        (oPortalOut.y2 - oPortalOut.y1) / (oPortalOut.x2 - oPortalOut.x1);
+    const cOut = oPortalOut.y2 - mOut * oPortalOut.x2;
+
+    const rotA = Math.atan((mIn - mOut) / (1 + mIn * mOut));
+
+    const interPx = (cOut - cIn) / (mIn - mOut);
+    const interPy = mIn * interPx + cIn;
+
+    const pathIn = new Path2D();
+    if (mIn !== 0) {
+        pathIn.moveTo((0 - cIn) / mIn, 0);
+        pathIn.lineTo((CANVAS_HEIGHT - cIn) / mIn, CANVAS_HEIGHT);
+    } else {
+        pathIn.moveTo(0, oPortalIn.y1);
+        pathIn.lineTo(CANVAS_WIDTH, oPortalIn.y1);
+    }
+    if (portalIn.dir === 1) {
+        pathIn.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT);
+        pathIn.lineTo(CANVAS_WIDTH, 0);
+    } else if (portalIn.dir === -1) {
+        pathIn.lineTo(0, CANVAS_HEIGHT);
+        pathIn.lineTo(0, 0);
+    }
+
+    const pathOut = new Path2D();
+    if (mOut !== 0) {
+        pathOut.moveTo((0 - cOut) / mOut, 0);
+        pathOut.lineTo((CANVAS_HEIGHT - cOut) / mOut, CANVAS_HEIGHT);
+    } else {
+        pathOut.moveTo(0, oPortalOut.y1);
+        pathOut.lineTo(CANVAS_WIDTH, oPortalOut.y1);
+    }
+    if (portalOut.dir === 1) {
+        pathOut.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT);
+        pathOut.lineTo(CANVAS_WIDTH, 0);
+    } else if (portalOut.dir === -1) {
+        pathOut.lineTo(0, CANVAS_HEIGHT);
+        pathOut.lineTo(0, 0);
+    }
+
+    ctx.save();
+
+    if (
+        (portalIn.x1 !== 0 &&
+            portalIn.y1 !== 0 &&
+            portalIn.x2 !== 0 &&
+            portalIn.y2 !== 0) ||
+        (portalOut.x1 !== 0 &&
+            portalOut.y1 !== 0 &&
+            portalOut.x2 !== 0 &&
+            portalOut.y2 !== 0)
+    ) {
+        ctx.clip(pathIn);
+    }
 
     const hatRadius = 0.75 * h_o;
+    const balloonRadius = 45 * Math.sign(h_o);
 
-    drawCircle(
-        ctx,
-        ORIGIN_X - d_o,
-        ORIGIN_Y - h_o + hatRadius,
-        hatRadius,
-        -45,
-        -135,
+    switch (objType) {
+        case OBJ_NAIL:
+            {
+                drawLine(
+                    ctx,
+                    ORIGIN_X - d_o,
+                    ORIGIN_Y,
+                    ORIGIN_X - d_o,
+                    ORIGIN_Y - h_o,
+                );
+
+                drawCircle(
+                    ctx,
+                    ORIGIN_X - d_o,
+                    ORIGIN_Y - h_o + hatRadius,
+                    hatRadius,
+                    -45,
+                    -135,
+                );
+                drawLine(
+                    ctx,
+                    ORIGIN_X - d_o - hatRadius + 7.5 * (h_o / 50),
+                    ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
+                    ORIGIN_X - d_o + hatRadius - 7.5 * (h_o / 50),
+                    ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
+                );
+            }
+            break;
+        case OBJ_BALLOON:
+            {
+                if (balloonState !== BALLOON_OPENED_PAPER) {
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y - h_o + 2 * balloonRadius + 12.5,
+                    );
+
+                    if (balloonState === BALLOON_INFLATED) {
+                        drawCircle(
+                            ctx,
+                            ORIGIN_X - d_o,
+                            ORIGIN_Y - h_o + balloonRadius,
+                            balloonRadius,
+                            67.5,
+                            -247.5,
+                        );
+                    }
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_o - 0.6 * balloonRadius,
+                        ORIGIN_Y - h_o + 1.8 * balloonRadius,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y - h_o + 2 * balloonRadius + 12.5,
+                    );
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y - h_o + 2 * balloonRadius + 12.5,
+                        ORIGIN_X - d_o + 0.6 * balloonRadius,
+                        ORIGIN_Y - h_o + 1.8 * balloonRadius,
+                    );
+                }
+            }
+            break;
+    }
+
+    ctx.restore();
+
+    if (
+        (portalIn.x1 === 0 &&
+            portalIn.y1 === 0 &&
+            portalIn.x2 === 0 &&
+            portalIn.y2 === 0) ||
+        (portalOut.x1 === 0 &&
+            portalOut.y1 === 0 &&
+            portalOut.x2 === 0 &&
+            portalOut.y2 === 0)
+    )
+        return;
+
+    ctx.save();
+
+    ctx.clip(pathOut);
+
+    ctx.translate(interPx, interPy);
+    console.log((rotA * 180) / Math.PI);
+    ctx.rotate(-rotA);
+    ctx.rotate(-(Math.PI / 2 - Math.atan(mIn)));
+    const dPIn = Math.sqrt(
+        (interPx -
+            (oPortalIn.y2 > oPortalIn.y1 ? oPortalIn.x2 : oPortalIn.x1)) **
+        2 +
+        (interPy -
+            (oPortalIn.y2 > oPortalIn.y1 ? oPortalIn.y2 : oPortalIn.y1)) **
+        2,
     );
-    drawLine(
-        ctx,
-        ORIGIN_X - d_o - hatRadius + 7.5 * (h_o / 50),
-        ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
-        ORIGIN_X - d_o + hatRadius - 7.5 * (h_o / 50),
-        ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
+    const dPOut = Math.sqrt(
+        (interPx -
+            (oPortalOut.y2 > oPortalOut.y1 ? oPortalOut.x2 : oPortalOut.x1)) **
+        2 +
+        (interPy -
+            (oPortalOut.y2 > oPortalOut.y1
+                ? oPortalOut.y2
+                : oPortalOut.y1)) **
+        2,
     );
+
+    ctx.translate(0, mOut >= 0 ? dPOut - dPIn : dPIn - dPOut);
+    ctx.scale(-portalOut.dir * portalIn.dir, 1);
+    ctx.rotate(Math.PI / 2 - Math.atan(mIn));
+    ctx.translate(-interPx, -interPy);
+
+    switch (objType) {
+        case OBJ_NAIL:
+            {
+                drawLine(
+                    ctx,
+                    ORIGIN_X - d_o,
+                    ORIGIN_Y,
+                    ORIGIN_X - d_o,
+                    ORIGIN_Y - h_o,
+                );
+
+                drawCircle(
+                    ctx,
+                    ORIGIN_X - d_o,
+                    ORIGIN_Y - h_o + hatRadius,
+                    hatRadius,
+                    -45,
+                    -135,
+                );
+                drawLine(
+                    ctx,
+                    ORIGIN_X - d_o - hatRadius + 7.5 * (h_o / 50),
+                    ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
+                    ORIGIN_X - d_o + hatRadius - 7.5 * (h_o / 50),
+                    ORIGIN_Y - h_o + hatRadius / 2 - 8 * (h_o / 50),
+                );
+            }
+            break;
+        case OBJ_BALLOON:
+            {
+                if (balloonState !== BALLOON_OPENED_PAPER) {
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y - h_o + 2 * balloonRadius + 12.5,
+                    );
+
+                    if (balloonState === BALLOON_INFLATED) {
+                        drawCircle(
+                            ctx,
+                            ORIGIN_X - d_o,
+                            ORIGIN_Y - h_o + balloonRadius,
+                            balloonRadius,
+                            67.5,
+                            -247.5,
+                        );
+                    }
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_o - 0.6 * balloonRadius,
+                        ORIGIN_Y - h_o + 1.8 * balloonRadius,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y - h_o + 2 * balloonRadius + 12.5,
+                    );
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_o,
+                        ORIGIN_Y - h_o + 2 * balloonRadius + 12.5,
+                        ORIGIN_X - d_o + 0.6 * balloonRadius,
+                        ORIGIN_Y - h_o + 1.8 * balloonRadius,
+                    );
+                }
+            }
+            break;
+    }
+
+    ctx.restore();
 }
 
 /**
@@ -575,25 +1016,87 @@ function drawObj(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawObjImg(ctx) {
-    drawLine(ctx, ORIGIN_X - d_i, ORIGIN_Y, ORIGIN_X - d_i, ORIGIN_Y - h_i);
-
     const hatRadius = 0.75 * h_i;
+    const balloonRadius = 45 * Math.sign(h_i) * Math.abs(M);
 
-    drawCircle(
-        ctx,
-        ORIGIN_X - d_i,
-        ORIGIN_Y - h_i + hatRadius,
-        hatRadius,
-        -45,
-        -135,
-    );
-    drawLine(
-        ctx,
-        ORIGIN_X - d_i - hatRadius + 7.5 * (h_i / 50),
-        ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / 50),
-        ORIGIN_X - d_i + hatRadius - 7.5 * (h_i / 50),
-        ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / 50),
-    );
+    switch (objType) {
+        case OBJ_NAIL:
+            {
+                drawLine(
+                    ctx,
+                    ORIGIN_X - d_i,
+                    ORIGIN_Y,
+                    ORIGIN_X - d_i,
+                    ORIGIN_Y - h_i,
+                );
+
+                drawCircle(
+                    ctx,
+                    ORIGIN_X - d_i,
+                    ORIGIN_Y - h_i + hatRadius,
+                    hatRadius,
+                    -45,
+                    -135,
+                );
+
+                drawLine(
+                    ctx,
+                    ORIGIN_X - d_i - hatRadius + 7.5 * (h_i / 50),
+                    ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / 50),
+                    ORIGIN_X - d_i + hatRadius - 7.5 * (h_i / 50),
+                    ORIGIN_Y - h_i + hatRadius / 2 - 8 * (h_i / 50),
+                );
+            }
+            break;
+        case OBJ_BALLOON:
+            {
+                if (balloonState !== BALLOON_OPENED_PAPER) {
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_i,
+                        ORIGIN_Y,
+                        ORIGIN_X - d_i,
+                        ORIGIN_Y -
+                        h_i +
+                        2 * balloonRadius +
+                        Math.sign(h_i) * 12.5,
+                    );
+
+                    if (balloonState === BALLOON_INFLATED) {
+                        drawCircle(
+                            ctx,
+                            ORIGIN_X - d_i,
+                            ORIGIN_Y - h_i + balloonRadius,
+                            balloonRadius,
+                            67.5,
+                            -247.5,
+                        );
+                    }
+
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_i - 0.6 * balloonRadius,
+                        ORIGIN_Y - h_i + 1.8 * balloonRadius,
+                        ORIGIN_X - d_i,
+                        ORIGIN_Y -
+                        h_i +
+                        2 * balloonRadius +
+                        Math.sign(h_i) * 12.5,
+                    );
+                    drawLine(
+                        ctx,
+                        ORIGIN_X - d_i,
+                        ORIGIN_Y -
+                        h_i +
+                        2 * balloonRadius +
+                        Math.sign(h_i) * 12.5,
+                        ORIGIN_X - d_i + 0.6 * balloonRadius,
+                        ORIGIN_Y - h_i + 1.8 * balloonRadius,
+                    );
+                }
+            }
+            break;
+    }
 }
 
 /**
@@ -913,6 +1416,29 @@ function drawRaylines(ctx) {
  * @function
  * @param {CanvasRenderingContext2D} ctx
  */
+function drawPortals(ctx) {
+    drawLine(
+        ctx,
+        ORIGIN_X - portalIn.x1,
+        ORIGIN_Y - portalIn.y1,
+        ORIGIN_X - portalIn.x2,
+        ORIGIN_Y - portalIn.y2,
+        { lineColor: "blue" },
+    );
+    drawLine(
+        ctx,
+        ORIGIN_X - portalOut.x1,
+        ORIGIN_Y - portalOut.y1,
+        ORIGIN_X - portalOut.x2,
+        ORIGIN_Y - portalOut.y2,
+        { lineColor: "purple" },
+    );
+}
+
+/**
+ * @function
+ * @param {CanvasRenderingContext2D} ctx
+ */
 function drawLabels(ctx) {
     const fontSize = 16;
     ctx.font = `${fontSize}px Arial`;
@@ -967,6 +1493,29 @@ function drawLabels(ctx) {
 
 function draw() {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    clearPortalBtn.parentElement.style.display =
+        cursorMode !== CURSOR_PORTAL ? "none" : "block";
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(
+        ORIGIN_X + 4 * inputScaling,
+        ORIGIN_Y - 4 * inputScaling,
+        inputScaling * 0.98,
+        inputScaling * 1.05,
+    );
+
+    drawLine(
+        ctx,
+        ORIGIN_X - needleX,
+        ORIGIN_Y - needleY,
+        ORIGIN_X - needleX + inputScaling,
+        ORIGIN_Y - needleY,
+        {
+            lineColor: "lightgray",
+        },
+    );
+
     drawPrincipalLine(ctx);
     drawVertCenter(ctx);
     if (simMult === 1) {
@@ -985,7 +1534,39 @@ function draw() {
         drawObjImg(ctx);
     }
     drawRaylines(ctx);
+    drawPortals(ctx);
     drawLabels(ctx);
+
+    if (balloonState === BALLOON_POPPED) {
+        drawLine(
+            ctx,
+            ORIGIN_X - paperX - 25,
+            ORIGIN_Y - paperY - 25,
+            ORIGIN_X - paperX + 25,
+            ORIGIN_Y - paperY - 25,
+        );
+        drawLine(
+            ctx,
+            ORIGIN_X - paperX - 25,
+            ORIGIN_Y - paperY + 25,
+            ORIGIN_X - paperX + 25,
+            ORIGIN_Y - paperY + 25,
+        );
+        drawLine(
+            ctx,
+            ORIGIN_X - paperX - 25,
+            ORIGIN_Y - paperY - 25,
+            ORIGIN_X - paperX - 25,
+            ORIGIN_Y - paperY + 25,
+        );
+        drawLine(
+            ctx,
+            ORIGIN_X - paperX + 25,
+            ORIGIN_Y - paperY - 25,
+            ORIGIN_X - paperX + 25,
+            ORIGIN_Y - paperY + 25,
+        );
+    }
 }
 
 function update() {
@@ -997,13 +1578,79 @@ function update() {
     const selectedType = document.querySelector('input[name="type"]:checked');
     simMult = Number(selectedSim.value);
     typeMult = Number(selectedType.value);
+
+    objType = Number(objTypeSelectEl.value);
+
+    cursorMode = Number(cursorModeSelectEl.value);
+
     f = simMult * typeMult * inputScaling * Number(fInputEl.value);
     d_o = inputScaling * Number(doInputEl.value);
     h_o = inputScaling * Number(hoInputEl.value);
 
+    if (objType === OBJ_BALLOON) {
+        if (isAroundObj(ORIGIN_X - needleX, ORIGIN_Y - needleY)) {
+            const balloonRadius = 45 * Math.sign(h_o);
+            balloonState = BALLOON_POPPED;
+            paperX = d_o;
+            paperY = h_o - balloonRadius;
+        }
+    } else {
+        balloonState = BALLOON_INFLATED;
+    }
+
+    if (cursorMode === CURSOR_PORTAL) {
+        if (portalShotState === PORTAL_NONE) portalShotState = PORTAL_IN_START;
+    } else {
+        portalShotState = PORTAL_NONE;
+    }
+    if (
+        (portalIn.x1 !== 0 &&
+            portalIn.y1 !== 0 &&
+            portalIn.x2 !== 0 &&
+            portalIn.y2 !== 0) ||
+        (portalOut.x1 !== 0 &&
+            portalOut.y1 !== 0 &&
+            portalOut.x2 !== 0 &&
+            portalOut.y2 !== 0)
+    ) {
+        const oPortalIn = {
+            x1: ORIGIN_X - portalIn.x1,
+            y1: ORIGIN_Y - portalIn.y1,
+            x2: ORIGIN_X - portalIn.x2,
+            y2: ORIGIN_Y - portalIn.y2,
+        };
+
+        const mIn =
+            (oPortalIn.y2 - oPortalIn.y1) / (oPortalIn.x2 - oPortalIn.x1);
+        const cIn = oPortalIn.y2 - mIn * oPortalIn.x2;
+
+        const hatRadius = Math.max(0.75 * h_o, 25);
+        const edgeX = ORIGIN_X - d_o + hatRadius - 7.5 * (h_o / 50);
+        const edgeY = ORIGIN_Y - h_o;
+
+        const overlapness = mIn * edgeX + cIn - edgeY;
+        if (Math.sign(overlapness) !== Math.sign(mIn)) {
+            doInputEl.value =
+                (Math.max(portalOut.x1, portalOut.x2) + hatRadius / 2) /
+                inputScaling;
+            isHolding.obj = false;
+            isHolding.cvSim = false;
+        }
+    }
+
     d_i = (simMult * f * d_o) / (d_o - f);
-    const M = (-simMult * d_i) / d_o;
+    M = (-simMult * d_i) / d_o;
     h_i = M * h_o;
+
+    if (!isHolding.obj && !isHolding.objImg && objType === OBJ_BALLOON) {
+        if (balloonState === BALLOON_INFLATED) {
+            hoInputEl.value = Number(hoInputEl.value) + 0.05;
+        } else if (balloonState === BALLOON_POPPED) {
+            if (hoInputEl.value > 0) {
+                hoInputEl.value = Number(hoInputEl.value) - 0.05;
+            }
+        }
+    }
 }
 
 function setup() {
@@ -1026,10 +1673,15 @@ function setup() {
     h_o = inputScaling * Number(hoInputEl.value);
 }
 
-function all() {
-    update();
-    draw();
+function main() {
+    const deltaTime = Date.now() - prevTime;
+    if (deltaTime >= requiredElapsed) {
+        update();
+        draw();
+        prevTime = Date.now();
+    }
+    requestAnimationFrame(main);
 }
 
 setup();
-requestAnimationFrame(all);
+requestAnimationFrame(main);

@@ -771,10 +771,55 @@ function drawObj(ctx) {
         (oPortalOut.y2 - oPortalOut.y1) / (oPortalOut.x2 - oPortalOut.x1);
     const cOut = oPortalOut.y2 - mOut * oPortalOut.x2;
 
-    const rotA = Math.atan((mIn - mOut) / (1 + mIn * mOut));
+    // const rotA = Math.atan((mIn - mOut) / (1 + mIn * mOut));
 
     const interPx = (cOut - cIn) / (mIn - mOut);
     const interPy = mIn * interPx + cIn;
+
+    const dIPIn1 = Math.sqrt(
+        (interPx - oPortalIn.x1) ** 2 + (interPy - oPortalIn.y1) ** 2,
+    );
+    const dIPIn2 = Math.sqrt(
+        (interPx - oPortalIn.x2) ** 2 + (interPy - oPortalIn.y2) ** 2,
+    );
+    const dIPOut1 = Math.sqrt(
+        (interPx - oPortalOut.x1) ** 2 + (interPy - oPortalOut.y1) ** 2,
+    );
+    const dIPOut2 = Math.sqrt(
+        (interPx - oPortalOut.x2) ** 2 + (interPy - oPortalOut.y2) ** 2,
+    );
+
+    const sInx = Math.sign(Math.max(oPortalIn.x1, oPortalIn.x2) - interPx);
+    const sIny = Math.sign(Math.max(oPortalIn.y1, oPortalIn.y2) - interPy);
+    const dPInx = sInx * Math.abs(oPortalIn.x2 - oPortalIn.x1);
+    const dPIny = sIny * Math.abs(oPortalIn.y2 - oPortalIn.y1);
+    const dPIn = Math.sqrt(dPInx ** 2 + dPIny ** 2);
+
+    const sOutx = Math.sign(Math.max(oPortalOut.x1, oPortalOut.x2) - interPx);
+    const sOuty = Math.sign(Math.max(oPortalOut.y1, oPortalOut.y2) - interPy);
+    const dPOutx = sOutx * Math.abs(oPortalOut.x2 - oPortalOut.x1);
+    const dPOuty = sOuty * Math.abs(oPortalOut.y2 - oPortalOut.y1);
+    const dPOut = Math.sqrt(dPOutx ** 2 + dPOuty ** 2);
+
+    const rotADir = Math.sign(
+        Math.asin((dPInx * dPOuty - dPOutx * dPIny) / (dPIn * dPOut)),
+    );
+    const rotA =
+        rotADir * Math.acos((dPInx * dPOutx + dPIny * dPOuty) / (dPIn * dPOut));
+
+    drawCircle(
+        ctx,
+        interPx,
+        interPy,
+        Math.sqrt(
+            (interPx - (ORIGIN_X - d_o)) ** 2 +
+            (interPy - (ORIGIN_Y - h_o)) ** 2,
+        ),
+        0,
+        360,
+    );
+    ctx.fillStyle = "red";
+    ctx.fillRect(interPx, interPy, 5, 5);
 
     const pathIn = new Path2D();
     if (mIn !== 0) {
@@ -913,31 +958,21 @@ function drawObj(ctx) {
     ctx.clip(pathOut);
 
     ctx.translate(interPx, interPy);
-    console.log((rotA * 180) / Math.PI);
-    ctx.rotate(-rotA);
-    ctx.rotate(-(Math.PI / 2 - Math.atan(mIn)));
-    const dPIn = Math.sqrt(
-        (interPx -
-            (oPortalIn.y2 > oPortalIn.y1 ? oPortalIn.x2 : oPortalIn.x1)) **
-        2 +
-        (interPy -
-            (oPortalIn.y2 > oPortalIn.y1 ? oPortalIn.y2 : oPortalIn.y1)) **
-        2,
-    );
-    const dPOut = Math.sqrt(
-        (interPx -
-            (oPortalOut.y2 > oPortalOut.y1 ? oPortalOut.x2 : oPortalOut.x1)) **
-        2 +
-        (interPy -
-            (oPortalOut.y2 > oPortalOut.y1
-                ? oPortalOut.y2
-                : oPortalOut.y1)) **
-        2,
+    ctx.rotate(rotA);
+    ctx.rotate(
+        -Math.sign(Math.atan(mIn)) * (Math.PI / 2 - Math.abs(Math.atan(mIn))),
     );
 
-    ctx.translate(0, mOut >= 0 ? dPOut - dPIn : dPIn - dPOut);
+    ctx.translate(
+        0,
+        sIny < 0
+            ? Math.min(dIPIn1, dIPIn2) - Math.min(dIPOut1, dIPOut2)
+            : -(Math.max(dIPIn1, dIPIn2) - Math.max(dIPOut1, dIPOut2)),
+    );
     ctx.scale(-portalOut.dir * portalIn.dir, 1);
-    ctx.rotate(Math.PI / 2 - Math.atan(mIn));
+    ctx.rotate(
+        Math.sign(Math.atan(mIn)) * (Math.PI / 2 - Math.abs(Math.atan(mIn))),
+    );
     ctx.translate(-interPx, -interPy);
 
     switch (objType) {

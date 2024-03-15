@@ -807,20 +807,6 @@ function drawObj(ctx) {
     const rotA =
         rotADir * Math.acos((dPInx * dPOutx + dPIny * dPOuty) / (dPIn * dPOut));
 
-    drawCircle(
-        ctx,
-        interPx,
-        interPy,
-        Math.sqrt(
-            (interPx - (ORIGIN_X - d_o)) ** 2 +
-            (interPy - (ORIGIN_Y - h_o)) ** 2,
-        ),
-        0,
-        360,
-    );
-    ctx.fillStyle = "red";
-    ctx.fillRect(interPx, interPy, 5, 5);
-
     const pathIn = new Path2D();
     if (mIn !== 0) {
         pathIn.moveTo((0 - cIn) / mIn, 0);

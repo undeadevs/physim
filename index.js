@@ -133,11 +133,11 @@ document.body.addEventListener("pointermove", (e) => {
 
     if (isHolding.controlsContainer) {
         controlsContainerEl.style.setProperty(
-            "--_offset-x",
+            "--offset-x",
             `${window.innerWidth - e.clientX - controlsContainerEl.clientWidth / 2}px`,
         );
         controlsContainerEl.style.setProperty(
-            "--_offset-y",
+            "--offset-y",
             `${window.innerHeight - e.clientY - controlsContainerEl.clientHeight / 4}px`,
         );
     }

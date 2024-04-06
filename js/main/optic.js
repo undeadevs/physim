@@ -99,7 +99,7 @@ const clearPortalBtn = document.getElementById("clear-portal-btn");
 /**
  * @type {HTMLCanvasElement}
  */
-const cvSim = document.getElementById("cv-sim");
+const cvSim = document.getElementById("cv-optic");
 const ctx = cvSim.getContext("2d");
 
 window.addEventListener("resize", () => {
@@ -138,7 +138,16 @@ document.body.addEventListener("pointermove", (e) => {
         );
         controlsContainerEl.style.setProperty(
             "--offset-y",
-            `${window.innerHeight - e.clientY - controlsContainerEl.clientHeight / 4}px`,
+            `${window.innerHeight - e.clientY - 50}px`,
+        );
+
+        controlsContainerEl.style.setProperty(
+            "--el-w",
+            `${controlsContainerEl.clientWidth}px`,
+        );
+        controlsContainerEl.style.setProperty(
+            "--el-h",
+            `${controlsContainerEl.clientHeight}px`,
         );
     }
 });

@@ -4,6 +4,53 @@
     box-sizing: border-box;
 }
 
+.home-container {
+    display: grid;
+    place-content: center;
+
+    width: 100vw;
+    height: 100vh;
+}
+
+.home-container > h1 {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+ul.cards {
+    list-style: none;
+
+    display: grid;
+    grid-auto-flow: column;
+    gap: 1.5rem;
+}
+
+ul.cards > li {
+    width: 15rem;
+    height: 20rem;
+
+    border-radius: 0.5rem;
+    padding: 1rem;
+
+    display: grid;
+    text-align: center;
+    place-content: center;
+    gap: 1rem;
+
+    background-color: white;
+    box-shadow: 0 0 2rem 0rem #ddddee;
+}
+
+ul.cards > li > svg {
+    width: 10rem;
+    height: 10rem;
+}
+
+ul.cards > li > a {
+    text-decoration: none;
+    color: black;
+}
+
 .controls {
     --offset-x: 0rem;
     --offset-y: 0rem;
@@ -148,7 +195,7 @@
     border-radius: 0.5rem;
 }
 
-#cv-sim {
+#cv-optic {
     --input-scaling: 50px;
     --origin-x: 50vw;
     --origin-y: 50vh;
@@ -158,6 +205,35 @@
     background-position: var(--origin-x) var(--origin-y);
 
     touch-action: none;
+}
+
+.home-btn {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+
+    background-color: #4b5487;
+    color: white;
+    text-decoration: none;
+
+    width: 3rem;
+    height: 3rem;
+    padding: 0.1rem;
+    border-radius: 0.5rem;
+
+    display: grid;
+    place-content: center;
+}
+
+.home-btn > svg {
+    width: 1.5rem;
+}
+
+.home-wrapper {
+    width: 100vw;
+    height: 100vh;
+
+    display: grid;
 }
 
 @media screen and (max-width: 420px) {

@@ -9,56 +9,43 @@
 </head>
 
 <body>
-    <input type="checkbox" id="controls-toggle" hidden>
-    <div class="controls">
-        <div class="input-wrapper">
-            <input class="choice-controls-input" type="radio" name="sim" id="cermin" value="1" checked hidden />
-            <label class="choice-controls-label" for="cermin"><button>Cermin</button></label>
-
-            <input class="choice-controls-input" type="radio" name="sim" id="lensa" value="-1" hidden />
-            <label class="choice-controls-label" for="lensa"><button>Lensa</button></label>
-        </div>
-        <div class="input-wrapper">
-            <input class="choice-controls-input" type="radio" name="type" id="cekung" value="1" checked hidden />
-            <label class="choice-controls-label" for="cekung"><button>Cekung</button></label>
-
-            <input class="choice-controls-input" type="radio" name="type" id="cembung" value="-1" hidden />
-            <label class="choice-controls-label" for="cembung"><button>Cembung</button></label>
-        </div>
-        <div class="input-wrapper">
-            <label for="cursor-mode">Mode</label>
-            <select name="cursor_mode" id="cursor-mode">
-                <option value="0" selected>Normal</option>
-                <option value="1">Portal</option>
-            </select>
-        </div>
-        <div class="input-wrapper">
-            <label for="obj">Objek</label>
-            <select name="obj" id="obj">
-                <option value="0" selected>Paku Payung</option>
-                <option value="1">Balon</option>
-            </select>
-        </div>
-        <div class="input-wrapper">
-            <label for="do">Jarak Objek (do)</label>
-            <input type="range" name="do" id="do" value="2" min="0" max="15" step="0.05" />
-        </div>
-        <div class="input-wrapper">
-            <label for="ho">Tinggi Objek (ho)</label>
-            <input type="range" name="ho" id="ho" value="2" min="0" max="15" step="0.05" />
-        </div>
-        <div class="input-wrapper">
-            <label for="f">Jarak Fokus (f)</label>
-            <input type="range" name="f" id="f" value="2.5" min="0" max="15" step="0.05" />
-        </div>
-        <div class="input-wrapper">
-            <button id="clear-portal-btn">Clear Portal</button>
-        </div>
-
-        <label for="controls-toggle" class="action-btn"></button>
-    </div>
-    <canvas id="cv-sim"> </canvas>
-    <script src="./index.js"></script>
+    <a href="/" class="home-btn">
+        <svg width="94" height="82" viewBox="0 0 94 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M49.3088 0.690256C47.9095 -0.230087 46.0905 -0.230085 44.6912 0.690259L1.87557 28.8519C-1.57225 31.1196 0.0469255 36.4444 4.18433 36.4444H12.1945V77.8586C12.1945 80.1458 14.0644 82 16.3711 82H30.2933C32.6001 82 34.47 80.1458 34.47 77.8586V57.1515C34.47 54.8643 36.34 53.0101 38.6467 53.0101H56.7455C59.0523 53.0101 60.9222 54.8643 60.9222 57.1515V77.8586C60.9222 80.1458 62.7922 82 65.0989 82H79.0211C81.3278 82 83.1977 80.1458 83.1977 77.8586V36.4444H89.8157C93.9531 36.4444 95.5722 31.1196 92.1244 28.8518L49.3088 0.690256Z"
+                fill="white" />
+        </svg>
+    </a>
+    <main class="home-container">
+        <h1>Simulasi Fisika</h1>
+        <ul class="cards">
+            <li>
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M64.1595 51.6396H95V46.7136H64.1032C63.3863 31.0513 57.5878 17.6941 49.3836 11C41.1794 17.6941 35.3808 31.0513 34.664 46.7136H5V51.6396H34.6076C34.9793 68.009 40.8932 82.0724 49.3836 89C57.8739 82.0724 63.7878 68.009 64.1595 51.6396ZM59.2268 51.6396C58.9115 64.676 54.8593 75.577 49.3836 82.0818C43.9078 75.577 39.8556 64.676 39.5403 51.6396H59.2268ZM39.6004 46.7136C40.2018 34.4073 44.14 24.1472 49.3836 17.9182C54.6271 24.1472 58.5653 34.4073 59.1667 46.7136H39.6004Z"
+                        fill="black" />
+                </svg>
+                <a href="/optic.html">Simulasi Optik</a>
+            </li>
+            <li>
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M35.5692 15.4427C34.2508 14.6038 32.502 14.9924 31.6631 16.3107C30.8242 17.629 31.2128 19.3778 32.5311 20.2168L48.0927 30.1196C49.411 30.9586 51.1599 30.5699 51.9988 29.2516C52.8377 27.9333 52.4491 26.1845 51.1308 25.3455L35.5692 15.4427Z"
+                        fill="black" />
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M57.9426 83.2182C70.8203 87.8023 84.9758 81.0791 89.5599 68.2014C94.1441 55.3238 87.4208 41.1682 74.5432 36.5841C61.6655 32 47.5099 38.7232 42.9258 51.6009C38.3417 64.4785 45.0649 78.6341 57.9426 83.2182ZM62.6744 62.223L57.5206 76.7008C50.2448 72.9349 46.2381 64.8694 47.5615 56.8431L62.6744 62.223ZM64.6274 56.7366L49.3771 51.3078C53.2371 43.7082 61.7662 39.6247 70.0979 41.3688L64.6274 56.7366ZM63.041 78.5582C70.8489 79.9077 78.7183 76.2009 82.6545 69.3354L68.1608 64.176L63.041 78.5582ZM70.1138 58.6896L84.745 63.8979C86.5079 55.7862 82.7314 47.461 75.5503 43.4175L70.1138 58.6896Z"
+                        fill="black" />
+                    <path
+                        d="M16.032 48.9639C16.8073 47.6072 18.5356 47.1358 19.8923 47.9111L29.7952 53.5698C31.1519 54.3451 31.6233 56.0735 30.848 57.4302C30.0727 58.7869 28.3444 59.2583 26.9876 58.483L17.0848 52.8243C15.7281 52.049 15.2567 50.3206 16.032 48.9639Z"
+                        fill="black" />
+                    <path
+                        d="M14.2855 22.4771C12.9456 21.6731 11.2076 22.1076 10.4036 23.4475C9.59967 24.7875 10.0342 26.5254 11.3741 27.3294L32.5945 40.0616C33.9344 40.8656 35.6724 40.4311 36.4764 39.0912C37.2803 37.7512 36.8458 36.0132 35.5059 35.2093L14.2855 22.4771Z"
+                        fill="black" />
+                </svg>
+                <a href="/uam.html">Simulasi GLBB</a>
+            </li>
+        </ul>
+    </main>
 </body>
 
 </html>

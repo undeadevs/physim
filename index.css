@@ -2,6 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: "Montserrat", sans-serif;
 }
 
 .home-container {
@@ -234,6 +235,14 @@ ul.cards > li > a {
     height: 100vh;
 
     display: grid;
+}
+
+@font-face {
+    font-family: "Montserrat";
+    src: url("fonts/Montserrat-VariableFont_wght.ttf")
+        format("ttf supports variations")
+        url("Montserrat-VariableFont_wght.ttf") format("ttf-variations");
+    font-weight: 100 900;
 }
 
 @media screen and (max-width: 420px) {

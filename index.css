@@ -196,6 +196,10 @@ ul.cards > li > a {
     border-radius: 0.5rem;
 }
 
+#cv-uam {
+    touch-action: none;
+}
+
 #cv-optic {
     --input-scaling: 50px;
     --origin-x: 50vw;

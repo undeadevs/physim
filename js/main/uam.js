@@ -21,6 +21,27 @@ let rot;
  */
 let restitution;
 
+let pointerDown = false;
+let pointerPos = new Vector2D(0, 0);
+let pointerPrevPos = new Vector2D(0, 0);
+
+let holdingBi = -1;
+
+cvSim.addEventListener("pointerdown", (e) => {
+    pointerPos.x = e.clientX;
+    pointerPos.y = e.clientY;
+    pointerDown = true;
+});
+cvSim.addEventListener("pointermove", (e) => {
+    pointerPos.x = e.clientX;
+    pointerPos.y = e.clientY;
+});
+cvSim.addEventListener("pointerup", (e) => {
+    pointerPos.x = e.clientX;
+    pointerPos.y = e.clientY;
+    pointerDown = false;
+});
+
 function setup() {
     lastTimestamp = 0;
     deltaTime = 0;
@@ -110,27 +131,49 @@ function update() {
     cvSim.width = window.innerWidth;
     cvSim.height = window.innerHeight;
 
+    if (!pointerDown) {
+        holdingBi = -1;
+    }
+
     for (let bi = 0; bi < balls.length; ++bi) {
         const ball = balls[bi];
         const circle = ball.shape;
         const vel = ball.vel;
         const acc = ball.acc;
 
+        if (
+            circle.c.x + circle.r >= cvSim.width ||
+            circle.c.x - circle.r <= 0 ||
+            circle.c.y + circle.r >= cvSim.height ||
+            circle.c.y - circle.r <= 0
+        ) {
+            vel.x *= Math.abs(restitution);
+            vel.y *= Math.abs(restitution);
+        }
+
         if (circle.c.x + circle.r >= cvSim.width) {
             circle.c.x = cvSim.width - circle.r;
-            vel.x *= -restitution;
+            vel.x *= -1;
         }
         if (circle.c.x - circle.r <= 0) {
             circle.c.x = circle.r;
-            vel.x *= -restitution;
+            vel.x *= -1;
         }
         if (circle.c.y + circle.r >= cvSim.height) {
             circle.c.y = cvSim.height - circle.r;
-            vel.y *= -restitution;
+            vel.y *= -1;
         }
         if (circle.c.y - circle.r <= 0) {
             circle.c.y = circle.r;
-            vel.y *= -restitution;
+            vel.y *= -1;
+        }
+
+        if (
+            pointerDown &&
+            circle.collidePoint(pointerPos) &&
+            holdingBi === -1
+        ) {
+            holdingBi = bi;
         }
 
         for (let oi = 0; oi < balls.length; ++oi) {
@@ -156,12 +199,28 @@ function update() {
             otherBall.rot += ((otherVel.x / otherCircle.r) * deltaTime) / 1000;
         }
 
-        circle.c.x += (vel.x * deltaTime) / 1000;
-        circle.c.y += (vel.y * deltaTime) / 1000;
-        vel.x += (acc.x * deltaTime) / 1000;
-        vel.y += (acc.y * deltaTime) / 1000;
-        ball.rot += ((vel.x / circle.r) * deltaTime) / 1000;
+        if (holdingBi === bi) {
+            circle.c.x = Math.max(
+                Math.min(pointerPos.x, cvSim.clientWidth - circle.r),
+                circle.r,
+            );
+            circle.c.y = Math.max(
+                Math.min(pointerPos.y, cvSim.clientHeight - circle.r),
+                circle.r,
+            );
+            vel.x = (pointerPos.x - pointerPrevPos.x) * 25;
+            vel.y = (pointerPos.y - pointerPrevPos.y) * 25;
+        } else {
+            circle.c.x += (vel.x * deltaTime) / 1000;
+            circle.c.y += (vel.y * deltaTime) / 1000;
+            vel.x += (acc.x * deltaTime) / 1000;
+            vel.y += (acc.y * deltaTime) / 1000;
+            ball.rot += ((vel.x / circle.r) * deltaTime) / 1000;
+        }
     }
+
+    pointerPrevPos.x = pointerPos.x;
+    pointerPrevPos.y = pointerPos.y;
 }
 
 function main(timestamp) {

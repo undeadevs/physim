@@ -16,8 +16,40 @@
                 fill="white" />
         </svg>
     </a>
-    <main>
+    <main id="uam-main">
+        <ul class="toolbar">
+            <li>
+                <input type="checkbox" id="play" hidden />
+                <label for="play">
+                    <button id="play-btn">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M75.75 46.342C78.4167 47.8816 78.4167 51.7306 75.75 53.2702L24 83.1481C21.3333 84.6877 18 82.7632 18 79.684L18 19.9282C18 16.849 21.3333 14.9245 24 16.4641L75.75 46.342Z"
+                                fill="white" />
+                        </svg>
+                    </button>
+                    <button id="pause-btn">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M59 21C59 18.7909 60.7909 17 63 17H67C69.2091 17 71 18.7909 71 21V79C71 81.2091 69.2091 83 67 83H63C60.7909 83 59 81.2091 59 79V21Z"
+                                fill="white" />
+                            <path
+                                d="M28 21C28 18.7909 29.7909 17 32 17H36C38.2091 17 40 18.7909 40 21V79C40 81.2091 38.2091 83 36 83H32C29.7909 83 28 81.2091 28 79V21Z"
+                                fill="white" />
+                        </svg>
+                    </button>
+                </label>
+            </li>
+        </ul>
         <canvas id="cv-uam"></canvas>
+        <div class="control-form">
+            <label for="velx">v.x</label>
+            <input type="number" name="velx" id="velx" step="0.01" />
+            <label for="vely">v.y</label>
+            <input type="number" name="vely" id="vely" step="0.01" />
+        </div>
     </main>
     <script src="./js/utils/vector.js" type="module"></script>
     <script src="./js/utils/shapes.js" type="module"></script>

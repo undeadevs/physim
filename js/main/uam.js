@@ -4,7 +4,14 @@ import { Circle, LineSegment } from "../utils/shapes.js";
 const cvSim = document.getElementById("cv-uam");
 const ctx = cvSim.getContext("2d");
 
-let lastTimestamp, deltaTime;
+const playBtn = document.getElementById("play");
+
+const velXInputEl = document.getElementById("velx");
+const velYInputEl = document.getElementById("vely");
+
+const SCALE = 50;
+
+let lastTimestamp, deltaTime, isPaused;
 
 /**
  * @type {{shape: Circle, vel: Vector2D, acc: Vector2D, rot: number}[]}
@@ -26,6 +33,7 @@ let pointerPos = new Vector2D(0, 0);
 let pointerPrevPos = new Vector2D(0, 0);
 
 let holdingBi = -1;
+let formBi = 0;
 
 cvSim.addEventListener("pointerdown", (e) => {
     pointerPos.x = e.clientX;
@@ -45,9 +53,17 @@ cvSim.addEventListener("pointerup", (e) => {
 function setup() {
     lastTimestamp = 0;
     deltaTime = 0;
+    isPaused = true;
 
     cvSim.width = window.innerWidth;
     cvSim.height = window.innerHeight;
+
+    playBtn.checked = !isPaused;
+    velXInputEl.readOnly = !isPaused;
+    velYInputEl.readOnly = !isPaused;
+
+    velXInputEl.value = 0;
+    velYInputEl.value = 0;
 
     const gAcc = new Vector2D(0, 700);
 
@@ -57,7 +73,7 @@ function setup() {
             new Vector2D(cvSim.width / 2 + (Math.random() * 400 - 200), 200),
             50,
         ),
-        vel: new Vector2D(200, 0),
+        vel: new Vector2D(0, 0),
         acc: gAcc.scale(1, 1),
         rot: 0,
     });
@@ -77,15 +93,14 @@ function setup() {
         shape: new Circle(
             new Vector2D(
                 balls[balls.length - 1].shape.c.x + (Math.random() * 400 - 200),
-                200,
+                120,
             ),
             50,
         ),
-        vel: new Vector2D(-50, 0),
+        vel: new Vector2D(0, 0),
         acc: gAcc.scale(1, 1),
         rot: 0,
     });
-
     restitution = 0.5;
 }
 
@@ -95,11 +110,13 @@ function draw() {
     for (let bi = 0; bi < balls.length; ++bi) {
         const ball = balls[bi];
         const circle = ball.shape;
+        const vel = ball.vel;
         const rot = ball.rot;
+        const bColor = `hsl(${(bi / balls.length) * 255}, 100%, 25%)`;
 
         circle.draw(ctx, {
             strokeOpt: {
-                color: `hsl(${(bi / balls.length) * 255}, 100%, 25%)`,
+                color: bColor,
             },
         });
 
@@ -112,7 +129,7 @@ function draw() {
                 .add(circle.c.scale(-1, -1))
                 .rotate(rot)
                 .add(circle.c),
-        ).draw(ctx, { color: `hsl(${(bi / balls.length) * 255}, 100%, 25%)` });
+        ).draw(ctx, { color: bColor });
 
         new LineSegment(
             new Vector2D(circle.c.x, circle.c.y - circle.r)
@@ -123,17 +140,45 @@ function draw() {
                 .add(circle.c.scale(-1, -1))
                 .rotate(rot)
                 .add(circle.c),
-        ).draw(ctx, { color: `hsl(${(bi / balls.length) * 255}, 100%, 25%)` });
+        ).draw(ctx, { color: bColor });
+
+        if (vel.norm() > 0) {
+            console.log(bi, circle.c, vel);
+            new LineSegment(circle.c, circle.c.add(vel)).draw(ctx, {
+                color: bColor,
+            });
+        }
     }
 }
 
 function update() {
     cvSim.width = window.innerWidth;
     cvSim.height = window.innerHeight;
+    isPaused = !playBtn.checked;
+
+    velXInputEl.readOnly = !isPaused;
+    velYInputEl.readOnly = !isPaused;
 
     if (!pointerDown) {
         holdingBi = -1;
     }
+
+    if (holdingBi >= 0) {
+        formBi = holdingBi;
+        console.log(formBi);
+    }
+
+    const bColor = `hsl(${(formBi / balls.length) * 255}, 100%, 25%)`;
+    velXInputEl.style.setProperty("--bcolor", bColor);
+    velYInputEl.style.setProperty("--bcolor", bColor);
+
+    if (isPaused && holdingBi < 0) {
+        balls[formBi].vel.x = Number(velXInputEl.value) * SCALE;
+        balls[formBi].vel.y = Number(velYInputEl.value) * SCALE;
+    }
+
+    velXInputEl.value = balls[formBi].vel.x / SCALE;
+    velYInputEl.value = balls[formBi].vel.y / SCALE;
 
     for (let bi = 0; bi < balls.length; ++bi) {
         const ball = balls[bi];
@@ -142,10 +187,11 @@ function update() {
         const acc = ball.acc;
 
         if (
-            circle.c.x + circle.r >= cvSim.width ||
-            circle.c.x - circle.r <= 0 ||
-            circle.c.y + circle.r >= cvSim.height ||
-            circle.c.y - circle.r <= 0
+            !isPaused &&
+            (circle.c.x + circle.r >= cvSim.width ||
+                circle.c.x - circle.r <= 0 ||
+                circle.c.y + circle.r >= cvSim.height ||
+                circle.c.y - circle.r <= 0)
         ) {
             vel.x *= Math.abs(restitution);
             vel.y *= Math.abs(restitution);
@@ -224,7 +270,12 @@ function update() {
 }
 
 function main(timestamp) {
-    deltaTime = timestamp - lastTimestamp;
+    if (isPaused) {
+        deltaTime = 0;
+        lastTimestamp = timestamp;
+    } else {
+        deltaTime = timestamp - lastTimestamp;
+    }
 
     update();
     draw();

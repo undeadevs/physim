@@ -143,7 +143,6 @@ function draw() {
         ).draw(ctx, { color: bColor });
 
         if (vel.norm() > 0) {
-            console.log(bi, circle.c, vel);
             new LineSegment(circle.c, circle.c.add(vel)).draw(ctx, {
                 color: bColor,
             });
@@ -165,7 +164,6 @@ function update() {
 
     if (holdingBi >= 0) {
         formBi = holdingBi;
-        console.log(formBi);
     }
 
     const bColor = `hsl(${(formBi / balls.length) * 255}, 100%, 25%)`;

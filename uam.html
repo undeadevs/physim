@@ -42,13 +42,44 @@
                     </button>
                 </label>
             </li>
+            <li>
+                <button id="add-btn">
+                    <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M44 21C44 18.7909 45.7909 17 48 17H52C54.2091 17 56 18.7909 56 21V44H79C81.2091 44 83 45.7909 83 48V52C83 54.2091 81.2091 56 79 56H56V79C56 81.2091 54.2091 83 52 83H48C45.7909 83 44 81.2091 44 79V56H21C18.7909 56 17 54.2091 17 52V48C17 45.7909 18.7909 44 21 44H44V21Z"
+                            fill="white" />
+                    </svg>
+                </button>
+            </li>
+            <li>
+                <button id="remove-btn">
+                    <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M83 48C83 45.7909 81.2091 44 79 44L21 44C18.7909 44 17 45.7909 17 48L17 52C17 54.2091 18.7909 56 21 56L79 56C81.2091 56 83 54.2091 83 52L83 48Z"
+                            fill="white" />
+                    </svg>
+                </button>
+            </li>
         </ul>
         <canvas id="cv-uam"></canvas>
         <div class="control-form">
-            <label for="velx">v.x</label>
-            <input type="number" name="velx" id="velx" step="0.01" />
-            <label for="vely">v.y</label>
-            <input type="number" name="vely" id="vely" step="0.01" />
+            <label for="vmode">Input Mode</label>
+            <select name="vmode" id="vmode">
+                <option value="cartesian" selected>Cartesian</option>
+                <option value="polar">Polar</option>
+            </select>
+            <div class="ball-input-cartesian">
+                <label for="velx">v.x</label>
+                <input type="number" name="velx" id="velx" step="0.01" />
+                <label for="vely">v.y</label>
+                <input type="number" name="vely" id="vely" step="0.01" />
+            </div>
+            <div class="ball-input-polar">
+                <label for="vela">v.&theta;</label>
+                <input type="number" name="vela" id="vela" step="0.01" />
+                <label for="vell">||v||</label>
+                <input type="number" name="vela" id="vell" step="0.01" />
+            </div>
         </div>
     </main>
     <script src="./js/utils/vector.js" type="module"></script>

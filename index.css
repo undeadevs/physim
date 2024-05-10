@@ -281,6 +281,10 @@ ul.cards > li > a {
     background-color: #4b5487;
     color: white;
 
+    pointer-events: visiblefill;
+}
+
+.toolbar > li > label[for="play"] > button {
     pointer-events: none;
 }
 
@@ -302,6 +306,10 @@ ul.cards > li > a {
     display: grid;
 }
 
+#remove-btn {
+    background-color: var(--bcolor, #4b5487);
+}
+
 .control-form {
     position: fixed;
     bottom: 0.5rem;
@@ -315,8 +323,29 @@ ul.cards > li > a {
     pointer-events: none;
 }
 
+#vmode {
+    display: block;
+    border: 0.1rem solid black;
+
+    background-color: white;
+    color: black;
+
+    font-size: 1rem;
+    padding: 0.5rem;
+
+    width: 17.5rem;
+
+    border-radius: 0.25rem;
+
+    margin-bottom: 0.5rem;
+
+    pointer-events: visiblefill;
+}
+
 #velx,
-#vely {
+#vely,
+#vela,
+#vell {
     display: block;
     border: 0.1rem solid var(--bcolor, black);
 
@@ -324,6 +353,8 @@ ul.cards > li > a {
 
     font-size: 1rem;
     padding: 0.5rem;
+
+    width: 17.5rem;
 
     border-radius: 0.25rem;
 

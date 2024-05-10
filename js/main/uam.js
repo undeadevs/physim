@@ -5,13 +5,29 @@ const cvSim = document.getElementById("cv-uam");
 const ctx = cvSim.getContext("2d");
 
 const playBtn = document.getElementById("play");
+const addBtn = document.getElementById("add-btn");
+const removeBtn = document.getElementById("remove-btn");
+
+const modeInputEl = document.getElementById("vmode");
+
+const cartesianInputContainerEl = document.querySelector(
+    ".ball-input-cartesian",
+);
+const polarInputContainerEl = document.querySelector(".ball-input-polar");
 
 const velXInputEl = document.getElementById("velx");
 const velYInputEl = document.getElementById("vely");
+const velAInputEl = document.getElementById("vela");
+const velLInputEl = document.getElementById("vell");
 
 const SCALE = 50;
 
 let lastTimestamp, deltaTime, isPaused;
+
+/**
+ * @type {Vector2D}
+ */
+let gAcc;
 
 /**
  * @type {{shape: Circle, vel: Vector2D, acc: Vector2D, rot: number}[]}
@@ -50,6 +66,26 @@ cvSim.addEventListener("pointerup", (e) => {
     pointerDown = false;
 });
 
+addBtn.addEventListener("click", () => {
+    balls.push({
+        shape: new Circle(
+            new Vector2D(
+                balls[balls.length - 1].shape.c.x + (Math.random() * 400 - 200),
+                120,
+            ),
+            50,
+        ),
+        vel: new Vector2D(0, 0),
+        acc: gAcc.scale(1, 1),
+        rot: 0,
+    });
+    formBi = balls.length - 1;
+});
+
+removeBtn.addEventListener("click", () => {
+    balls.splice(formBi, 1);
+});
+
 function setup() {
     lastTimestamp = 0;
     deltaTime = 0;
@@ -61,11 +97,17 @@ function setup() {
     playBtn.checked = !isPaused;
     velXInputEl.readOnly = !isPaused;
     velYInputEl.readOnly = !isPaused;
+    velAInputEl.readOnly = !isPaused;
+    velLInputEl.readOnly = !isPaused;
+
+    modeInputEl.value = "cartesian";
 
     velXInputEl.value = 0;
     velYInputEl.value = 0;
+    velAInputEl.value = 0;
+    velLInputEl.value = 0;
 
-    const gAcc = new Vector2D(0, 700);
+    gAcc = new Vector2D(0, 700);
 
     balls = [];
     balls.push({
@@ -155,8 +197,13 @@ function update() {
     cvSim.height = window.innerHeight;
     isPaused = !playBtn.checked;
 
+    cartesianInputContainerEl.hidden = modeInputEl.value !== "cartesian";
+    polarInputContainerEl.hidden = modeInputEl.value !== "polar";
+
     velXInputEl.readOnly = !isPaused;
     velYInputEl.readOnly = !isPaused;
+    velAInputEl.readOnly = !isPaused;
+    velLInputEl.readOnly = !isPaused;
 
     if (!pointerDown) {
         holdingBi = -1;
@@ -166,17 +213,35 @@ function update() {
         formBi = holdingBi;
     }
 
-    const bColor = `hsl(${(formBi / balls.length) * 255}, 100%, 25%)`;
-    velXInputEl.style.setProperty("--bcolor", bColor);
-    velYInputEl.style.setProperty("--bcolor", bColor);
-
-    if (isPaused && holdingBi < 0) {
-        balls[formBi].vel.x = Number(velXInputEl.value) * SCALE;
-        balls[formBi].vel.y = Number(velYInputEl.value) * SCALE;
+    if (!balls[formBi]) {
+        formBi = balls.length - 1;
     }
 
-    velXInputEl.value = balls[formBi].vel.x / SCALE;
-    velYInputEl.value = balls[formBi].vel.y / SCALE;
+    const bColor = `hsl(${(formBi / balls.length) * 255}, 100%, 25%)`;
+    document.body.style.setProperty("--bcolor", bColor);
+
+    if (isPaused && holdingBi < 0) {
+        if (modeInputEl.value === "cartesian") {
+            balls[formBi].vel.x = Number(velXInputEl.value) * SCALE;
+            balls[formBi].vel.y = Number(velYInputEl.value) * SCALE;
+        } else if (modeInputEl.value === "polar") {
+            const velA = (Number(velAInputEl.value) * Math.PI) / 180;
+            const velL = Number(velLInputEl.value) * SCALE;
+            balls[formBi].vel.x = velL * Math.cos(velA);
+            balls[formBi].vel.y = velL * Math.sin(velA);
+        }
+    }
+
+    const formBVel = balls[formBi].vel;
+    velXInputEl.value = formBVel.x / SCALE;
+    velYInputEl.value = formBVel.y / SCALE;
+    if (!isPaused || holdingBi >= 0 || modeInputEl.value !== "polar") {
+        velAInputEl.value =
+            formBVel.norm() === 0
+                ? 0
+                : (Math.asin(formBVel.y / formBVel.norm()) * 180) / Math.PI;
+        velLInputEl.value = formBVel.norm() / SCALE;
+    }
 
     for (let bi = 0; bi < balls.length; ++bi) {
         const ball = balls[bi];

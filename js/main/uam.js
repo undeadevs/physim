@@ -295,13 +295,10 @@ function update() {
             const otherCircle = otherBall.shape;
             if (!circle.collideCircle(otherCircle)) continue;
             const distV = otherCircle.c.add(circle.c.scale(-1, -1));
-            otherCircle.c = otherCircle.c.add(
+            otherCircle.c = circle.c.add(
                 distV
                     .normalize()
-                    .scale(
-                        circle.r + otherCircle.r - distV.norm(),
-                        circle.r + otherCircle.r - distV.norm(),
-                    ),
+                    .scale(circle.r + otherCircle.r, circle.r + otherCircle.r),
             );
             const otherVel = otherBall.vel;
             const tempVel = vel.scale(1, 1);

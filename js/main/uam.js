@@ -95,6 +95,10 @@ function setup() {
     cvSim.height = window.innerHeight;
 
     playBtn.checked = !isPaused;
+
+    cartesianInputContainerEl.hidden = modeInputEl.value !== "cartesian";
+    polarInputContainerEl.hidden = modeInputEl.value !== "polar";
+
     velXInputEl.readOnly = !isPaused;
     velYInputEl.readOnly = !isPaused;
     velAInputEl.readOnly = !isPaused;
@@ -239,7 +243,7 @@ function update() {
         velAInputEl.value =
             formBVel.norm() === 0
                 ? 0
-                : (Math.asin(formBVel.y / formBVel.norm()) * 180) / Math.PI;
+                : (Math.atan2(formBVel.y, formBVel.x) * 180) / Math.PI;
         velLInputEl.value = formBVel.norm() / SCALE;
     }
 

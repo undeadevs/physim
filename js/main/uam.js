@@ -70,7 +70,10 @@ addBtn.addEventListener("click", () => {
     balls.push({
         shape: new Circle(
             new Vector2D(
-                balls[balls.length - 1].shape.c.x + (Math.random() * 400 - 200),
+                (balls.length > 0
+                    ? balls[balls.length - 1].shape.c.x
+                    : cvSim.width / 2) +
+                (Math.random() * 400 - 200),
                 120,
             ),
             50,
@@ -224,7 +227,7 @@ function update() {
     const bColor = `hsl(${(formBi / balls.length) * 255}, 100%, 25%)`;
     document.body.style.setProperty("--bcolor", bColor);
 
-    if (isPaused && holdingBi < 0) {
+    if (isPaused && holdingBi < 0 && balls[formBi]) {
         if (modeInputEl.value === "cartesian") {
             balls[formBi].vel.x = Number(velXInputEl.value) * SCALE;
             balls[formBi].vel.y = Number(velYInputEl.value) * SCALE;
@@ -253,32 +256,23 @@ function update() {
         const vel = ball.vel;
         const acc = ball.acc;
 
-        if (
-            !isPaused &&
-            (circle.c.x + circle.r >= cvSim.width ||
-                circle.c.x - circle.r <= 0 ||
-                circle.c.y + circle.r >= cvSim.height ||
-                circle.c.y - circle.r <= 0)
-        ) {
-            vel.x *= Math.abs(restitution);
-            vel.y *= Math.abs(restitution);
-        }
-
         if (circle.c.x + circle.r >= cvSim.width) {
             circle.c.x = cvSim.width - circle.r;
-            vel.x *= -1;
+            vel.x *= -restitution;
         }
         if (circle.c.x - circle.r <= 0) {
             circle.c.x = circle.r;
-            vel.x *= -1;
+            vel.x *= -restitution;
         }
         if (circle.c.y + circle.r >= cvSim.height) {
             circle.c.y = cvSim.height - circle.r;
-            vel.y *= -1;
+            vel.x *= Math.abs(restitution);
+            vel.y *= -restitution;
         }
         if (circle.c.y - circle.r <= 0) {
             circle.c.y = circle.r;
-            vel.y *= -1;
+            vel.x *= Math.abs(restitution);
+            vel.y *= -restitution;
         }
 
         if (

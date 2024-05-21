@@ -299,14 +299,28 @@ function update() {
             if (!circle.collideCircle(otherCircle)) continue;
             // x2 - x1
             const distV = otherCircle.c.add(circle.c.scale(-1, -1));
-            otherCircle.c = circle.c.add(
-                distV
-                    .normalize()
-                    .scale(circle.r + otherCircle.r, circle.r + otherCircle.r),
-            );
-
             // x1 - x2
             const distVO = distV.scale(-1, -1);
+
+            if (holdingBi < 0 || holdingBi === bi) {
+                otherCircle.c = circle.c.add(
+                    distV
+                        .normalize()
+                        .scale(
+                            circle.r + otherCircle.r + 0.05,
+                            circle.r + otherCircle.r + 0.05,
+                        ),
+                );
+            } else {
+                circle.c = otherCircle.c.add(
+                    distVO
+                        .normalize()
+                        .scale(
+                            circle.r + otherCircle.r + 0.05,
+                            circle.r + otherCircle.r + 0.05,
+                        ),
+                );
+            }
 
             // v1 - v2
             const v1v2 = vel.add(otherBall.vel.scale(-1, -1));

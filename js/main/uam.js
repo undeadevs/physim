@@ -8,6 +8,9 @@ const playBtn = document.getElementById("play");
 const addBtn = document.getElementById("add-btn");
 const removeBtn = document.getElementById("remove-btn");
 
+const gInputEl = document.getElementById("gravity");
+const restitutionInputEl = document.getElementById("restitution");
+
 const modeInputEl = document.getElementById("vmode");
 
 const cartesianInputContainerEl = document.querySelector(
@@ -73,7 +76,7 @@ addBtn.addEventListener("click", () => {
                 (balls.length > 0
                     ? balls[balls.length - 1].shape.c.x
                     : cvSim.width / 2) +
-                (Math.random() * 400 - 200),
+                    (Math.random() * 400 - 200),
                 120,
             ),
             50,
@@ -115,6 +118,8 @@ function setup() {
     velLInputEl.value = 0;
 
     gAcc = new Vector2D(0, 700);
+    gInputEl.value = gAcc.y / SCALE;
+    restitutionInputEl.value = restitution;
 
     balls = [];
     balls.push({
@@ -123,7 +128,7 @@ function setup() {
             50,
         ),
         vel: new Vector2D(0, 0),
-        acc: gAcc.scale(1, 1),
+        acc: new Vector2D(0, 0),
         rot: 0,
     });
     balls.push({
@@ -135,7 +140,7 @@ function setup() {
             50,
         ),
         vel: new Vector2D(0, 0),
-        acc: gAcc.scale(1, 1),
+        acc: new Vector2D(0, 0),
         rot: 0,
     });
     balls.push({
@@ -147,7 +152,7 @@ function setup() {
             50,
         ),
         vel: new Vector2D(0, 0),
-        acc: gAcc.scale(1, 1),
+        acc: new Vector2D(0, 0),
         rot: 0,
     });
     restitution = 0.5;
@@ -212,6 +217,9 @@ function update() {
     velAInputEl.readOnly = !isPaused;
     velLInputEl.readOnly = !isPaused;
 
+    gAcc.y = Number(gInputEl.value) * SCALE;
+    restitution = Number(restitutionInputEl.value);
+
     if (!pointerDown) {
         holdingBi = -1;
     }
@@ -254,6 +262,7 @@ function update() {
         const ball = balls[bi];
         const circle = ball.shape;
         const vel = ball.vel;
+        ball.acc = gAcc.scale(1, 1);
         const acc = ball.acc;
 
         if (circle.c.x + circle.r >= cvSim.width) {
@@ -288,19 +297,45 @@ function update() {
             const otherBall = balls[oi];
             const otherCircle = otherBall.shape;
             if (!circle.collideCircle(otherCircle)) continue;
+            // x2 - x1
             const distV = otherCircle.c.add(circle.c.scale(-1, -1));
             otherCircle.c = circle.c.add(
                 distV
                     .normalize()
                     .scale(circle.r + otherCircle.r, circle.r + otherCircle.r),
             );
-            const otherVel = otherBall.vel;
-            const tempVel = vel.scale(1, 1);
-            vel.x = otherVel.x;
-            vel.y = otherVel.y;
-            otherVel.x = tempVel.x;
-            otherVel.y = tempVel.y;
-            otherBall.rot += ((otherVel.x / otherCircle.r) * deltaTime) / 1000;
+
+            // x1 - x2
+            const distVO = distV.scale(-1, -1);
+
+            // v1 - v2
+            const v1v2 = vel.add(otherBall.vel.scale(-1, -1));
+            // v2 - v1
+            const v2v1 = v1v2.scale(-1, -1);
+
+            // <v1 - v2, x1 - x2> / ||x1 - x2||**2
+            const c1 = v1v2.dot(distVO) / distVO.norm() ** 2;
+            // <v1 - v2, x1 - x2> / ||x2 - x1||**2
+            const c2 = v2v1.dot(distV) / distV.norm() ** 2;
+
+            // v1 - c1*(x1-x2)
+            ball.vel = vel.add(distVO.scale(-c1, -c1));
+            // v2 - c2*(x2-x1)
+            otherBall.vel = otherBall.vel.add(distV.scale(-c2, -c2));
+
+            otherBall.rot +=
+                ((otherBall.vel.x / otherCircle.r) * deltaTime) / 1000;
+
+            otherCircle.c.x += (otherBall.vel.x * deltaTime) / 1000;
+            otherCircle.c.y += (otherBall.vel.y * deltaTime) / 1000;
+
+            // const otherVel = otherBall.vel;
+            // const tempVel = vel.scale(1, 1);
+            // vel.x = otherVel.x;
+            // vel.y = otherVel.y;
+            // otherVel.x = tempVel.x;
+            // otherVel.y = tempVel.y;
+            // otherBall.rot += ((otherVel.x / otherCircle.r) * deltaTime) / 1000;
         }
 
         if (holdingBi === bi) {

@@ -310,17 +310,25 @@ ul.cards > li > a {
     background-color: var(--bcolor, #4b5487);
 }
 
-.control-form {
-    position: fixed;
-    bottom: 0.5rem;
-    left: 0.5rem;
-
-    pointer-events: none;
+#uam-main .controls label {
+    color: white;
 }
 
-.control-form > label {
-    user-select: none;
-    pointer-events: none;
+#controls-toggle + .controls > .control-form {
+    max-height: 100%;
+    overflow: hidden;
+    transition: width 250ms ease-out;
+}
+
+#controls-toggle:checked + .controls > .control-form {
+    width: 0px;
+    max-height: 0px;
+}
+
+#gravity,
+#restitution {
+    display: block;
+    width: 100%;
 }
 
 #vmode {

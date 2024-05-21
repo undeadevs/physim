@@ -62,24 +62,32 @@
             </li>
         </ul>
         <canvas id="cv-uam"></canvas>
-        <div class="control-form">
-            <label for="vmode">Input Mode</label>
-            <select name="vmode" id="vmode">
-                <option value="cartesian" selected>Cartesian</option>
-                <option value="polar">Polar</option>
-            </select>
-            <div class="ball-input-cartesian">
-                <label for="velx">v.x</label>
-                <input type="number" name="velx" id="velx" step="0.01" />
-                <label for="vely">v.y</label>
-                <input type="number" name="vely" id="vely" step="0.01" />
+        <input type="checkbox" id="controls-toggle" hidden />
+        <div class="controls">
+            <div class="control-form">
+                <label for="gravity">Gravity</label>
+                <input type="range" name="gravity" id="gravity" min="0" max="28" step="0.05">
+                <label for="restitution">Restitution</label>
+                <input type="range" name="restitution" id="restitution" min="0" max="1" step="0.01">
+                <label for="vmode">Input Mode</label>
+                <select name="vmode" id="vmode">
+                    <option value="cartesian" selected>Cartesian</option>
+                    <option value="polar">Polar</option>
+                </select>
+                <div class="ball-input-cartesian">
+                    <label for="velx">v.x</label>
+                    <input type="number" name="velx" id="velx" step="0.01" />
+                    <label for="vely">v.y</label>
+                    <input type="number" name="vely" id="vely" step="0.01" />
+                </div>
+                <div class="ball-input-polar">
+                    <label for="vela">v.&theta;</label>
+                    <input type="number" name="vela" id="vela" step="0.01" />
+                    <label for="vell">||v||</label>
+                    <input type="number" name="vela" id="vell" step="0.01" />
+                </div>
             </div>
-            <div class="ball-input-polar">
-                <label for="vela">v.&theta;</label>
-                <input type="number" name="vela" id="vela" step="0.01" />
-                <label for="vell">||v||</label>
-                <input type="number" name="vela" id="vell" step="0.01" />
-            </div>
+            <label for="controls-toggle" class="action-btn"></button>
         </div>
     </main>
     <script src="./js/utils/vector.js" type="module"></script>

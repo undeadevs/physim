@@ -1,7 +1,7 @@
 import { Vector2D } from "../utils/vector.js";
 import { Circle, LineSegment } from "../utils/shapes.js";
 
-const cvSim = document.getElementById("cv-uam");
+const cvSim = document.getElementById("cv-ball");
 const ctx = cvSim.getContext("2d");
 
 const playBtn = document.getElementById("play");

@@ -196,7 +196,7 @@ ul.cards > li > a {
     border-radius: 0.5rem;
 }
 
-#cv-uam {
+#cv-ball {
     touch-action: none;
 }
 
@@ -310,7 +310,7 @@ ul.cards > li > a {
     background-color: var(--bcolor, #4b5487);
 }
 
-#uam-main .controls label {
+#ball-main .controls label {
     color: white;
 }
 

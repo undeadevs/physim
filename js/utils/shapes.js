@@ -63,12 +63,12 @@ export class Circle {
                 (centerToP.norm() * this.r),
         );
         const aMin = Math.min(
-            this.a1 < 0 ? 2 * Math.PI - this.a1 : this.a1,
-            this.a2 < 0 ? 2 * Math.PI - this.a2 : this.a2,
+            this.a1 < 0 ? 2 * Math.PI + this.a1 : this.a1,
+            this.a2 < 0 ? 2 * Math.PI + this.a2 : this.a2,
         );
         const aMax = Math.max(
-            this.a1 < 0 ? 2 * Math.PI - this.a1 : this.a1,
-            this.a2 < 0 ? 2 * Math.PI - this.a2 : this.a2,
+            this.a1 < 0 ? 2 * Math.PI + this.a1 : this.a1,
+            this.a2 < 0 ? 2 * Math.PI + this.a2 : this.a2,
         );
         return centerToP.norm() <= this.r && angleP >= aMin && angleP <= aMax;
     }

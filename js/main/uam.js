@@ -297,23 +297,20 @@ function update() {
             const otherBall = balls[oi];
             const otherCircle = otherBall.shape;
             if (!circle.collideCircle(otherCircle)) continue;
-            // x2 - x1
-            const distV = otherCircle.c.add(circle.c.scale(-1, -1));
-            // x1 - x2
-            const distVO = distV.scale(-1, -1);
+            const collDist = circle.c.add(otherCircle.c.scale(-1, -1));
 
             if (holdingBi < 0 || holdingBi === bi) {
                 otherCircle.c = circle.c.add(
-                    distV
+                    collDist
                         .normalize()
                         .scale(
-                            circle.r + otherCircle.r + 0.05,
-                            circle.r + otherCircle.r + 0.05,
+                            -(circle.r + otherCircle.r + 0.05),
+                            -(circle.r + otherCircle.r + 0.05),
                         ),
                 );
             } else {
                 circle.c = otherCircle.c.add(
-                    distVO
+                    collDist
                         .normalize()
                         .scale(
                             circle.r + otherCircle.r + 0.05,
@@ -322,34 +319,22 @@ function update() {
                 );
             }
 
-            // v1 - v2
-            const v1v2 = vel.add(otherBall.vel.scale(-1, -1));
-            // v2 - v1
-            const v2v1 = v1v2.scale(-1, -1);
+            const collNormal = collDist.normalize();
 
-            // <v1 - v2, x1 - x2> / ||x1 - x2||**2
-            const c1 = v1v2.dot(distVO) / distVO.norm() ** 2;
-            // <v1 - v2, x1 - x2> / ||x2 - x1||**2
-            const c2 = v2v1.dot(distV) / distV.norm() ** 2;
+            const relVel = vel.add(otherBall.vel.scale(-1, -1));
+            const newRelVelNorm = relVel.dot(collNormal);
+            const newRelVel = collNormal
+                .normalize()
+                .scale(-newRelVelNorm, -newRelVelNorm);
 
-            // v1 - c1*(x1-x2)
-            ball.vel = vel.add(distVO.scale(-c1, -c1));
-            // v2 - c2*(x2-x1)
-            otherBall.vel = otherBall.vel.add(distV.scale(-c2, -c2));
+            ball.vel = vel.add(newRelVel);
+            otherBall.vel = otherBall.vel.add(newRelVel.scale(-1, -1));
 
             otherBall.rot +=
                 ((otherBall.vel.x / otherCircle.r) * deltaTime) / 1000;
 
             otherCircle.c.x += (otherBall.vel.x * deltaTime) / 1000;
             otherCircle.c.y += (otherBall.vel.y * deltaTime) / 1000;
-
-            // const otherVel = otherBall.vel;
-            // const tempVel = vel.scale(1, 1);
-            // vel.x = otherVel.x;
-            // vel.y = otherVel.y;
-            // otherVel.x = tempVel.x;
-            // otherVel.y = tempVel.y;
-            // otherBall.rot += ((otherVel.x / otherCircle.r) * deltaTime) / 1000;
         }
 
         if (holdingBi === bi) {

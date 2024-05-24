@@ -323,9 +323,7 @@ function update() {
 
             const relVel = vel.add(otherBall.vel.scale(-1, -1));
             const newRelVelNorm = relVel.dot(collNormal);
-            const newRelVel = collNormal
-                .normalize()
-                .scale(-newRelVelNorm, -newRelVelNorm);
+            const newRelVel = collNormal.scale(-newRelVelNorm, -newRelVelNorm);
 
             ball.vel = vel.add(newRelVel);
             otherBall.vel = otherBall.vel.add(newRelVel.scale(-1, -1));

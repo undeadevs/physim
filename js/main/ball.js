@@ -200,6 +200,30 @@ function draw() {
             new LineSegment(circle.c, circle.c.add(vel)).draw(ctx, {
                 color: bColor,
             });
+            new LineSegment(
+                circle.c
+                    .add(
+                        vel.normalize().scale(vel.norm() - 25, vel.norm() - 25),
+                    )
+                    .add(circle.c.add(vel).scale(-1, -1))
+                    .rotate(Math.PI / 8)
+                    .add(circle.c.add(vel)),
+                circle.c.add(vel),
+            ).draw(ctx, {
+                color: bColor,
+            });
+            new LineSegment(
+                circle.c
+                    .add(
+                        vel.normalize().scale(vel.norm() - 25, vel.norm() - 25),
+                    )
+                    .add(circle.c.add(vel).scale(-1, -1))
+                    .rotate(-Math.PI / 8)
+                    .add(circle.c.add(vel)),
+                circle.c.add(vel),
+            ).draw(ctx, {
+                color: bColor,
+            });
         }
     }
 }
